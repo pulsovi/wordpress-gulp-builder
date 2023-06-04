@@ -1,30 +1,36 @@
-const path = require('path');
-const Stream = require('stream');
+import path from 'path';
+import Stream from 'stream';
 
-const fs = require('fs-extra');
-const gulp = require('gulp');
-const filter = require('gulp-filter');
-const markdown = require('gulp-markdown');
-const watch = require('gulp-watch');
-const zip = require('gulp-zip');
-const mysql = require('mysql2');
-const pumpify = require('pumpify');
-const Vinyl = require('vinyl');
+import fs from 'fs-extra';
+import gulp from 'gulp';
+import filter from 'gulp-filter';
+import markdown from 'gulp-markdown';
+import watch from 'gulp-watch';
+import zip from 'gulp-zip';
+import mysql from 'mysql2';
+import pumpify from 'pumpify';
+import Vinyl from 'vinyl';
 
-const { src, dest, series, parallel } = gulp;
+import type { TaskFunction, TaskFunctionCallback } from 'gulp';
 
-const config = JSON.parse(fs.readFileSync('.gulpconfig.json'));
+const { src, dest, series, parallel, task } = gulp;
+
+const config = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
+
+interface ConnectionOptions {}
+
 const base = 'src';
 
 /** list of background services "close" functions */
-const idle = [];
+const idle: (() => void)[] = [];
 
 Error.stackTraceLimit = Infinity;
 
 /** Add stack to fs errors */
 (() => {
   Object.entries(fs).forEach(([name, func]) => {
-    fs[name] = async function (...args) {
+    if (typeof func !== 'function') return;
+    fs[name as any] = async function (...args) {
       try {
         return await Reflect.apply(func, this, args);
       } catch (error) {
@@ -66,7 +72,7 @@ function devPlugins () {
 }
 
 /** watch for a plugin change, build and copy files to server */
-async function pluginWatch (pluginName, cb) {
+async function pluginWatch (pluginName, cb = () => {}) {
   return series(
     pluginServerClean.bind(null, pluginName),
     parallel(
@@ -186,7 +192,7 @@ function doAction (action) {
 }
 
 /** Watch on snippets dir and launch a watcher for each snippet */
-function devSnippets () {
+function devSnippets (cb: TaskFunctionCallback) {
   const watchers = {};
   const watcher = gulp.watch(`src/snippets/*`, {
     ignoreInitial: false,
@@ -196,10 +202,11 @@ function devSnippets () {
   watcher.on('addDir', snippetPath => {
     const snippetName = path.basename(snippetPath);
     if (snippetName in watchers) {
-      console.error('ERROR: Already watched snippet');
-      process.exit(1);
+      cb(new Error(`Already watched snippet : ${snippetName}.`));
+      return;
     }
-    watchers[snippetName] = snippetWatch(snippetName);
+
+    watchers[snippetName] = task(snippetWatch(snippetName))(cb);
   });
 
   watcher.on('unlinkDir', snippetName => {
@@ -211,9 +218,10 @@ function devSnippets () {
 }
 
 /** monitors a snippet's source code folder and pushes changes to the build and the server */
-function snippetWatch(snippetName, cb) {
-  console.debug(`watch on snippet ${snippetName}`);
-  return series(snippetServerBind.bind(null, snippetName))(cb);
+function snippetWatch(snippetName): string {
+  const taskName = `snippetWatch(${snippetName})`;
+  task(taskName, series(snippetServerBind.bind(null, snippetName)));
+  return taskName;
 }
 
 function snippetServerBind (snippetName, cb) {
@@ -280,11 +288,12 @@ function snippetServerUpdate (snippetName) {
 
     const column = data.extname === '.php' ? 'code' : 'description';
 
-    query(
+    await query(
       `UPDATE \`${config.server.db_prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
-      [data.contents.toString(), snippetId],
-      cb
+      [data.contents.toString(), snippetId]
     );
+
+    cb();
   }
 
   return stream;
@@ -293,42 +302,53 @@ function snippetServerUpdate (snippetName) {
 async function snippetGetId (snippetName) {
   console.log('snippetGetId', { snippetName });
   const snippetTitle = await cache(snippetGetTitle, [{ name: snippetName }, true, true]);
-  const response = await new Promise((resolve, reject) => {
-    query(
-      `SELECT \`id\` FROM \`${config.server.db_prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
-      [snippetTitle],
-      (error, data) => error ? reject(error) : resolve(data)
-    );
-  }).catch(error => {
-    console.log(error);
-    throw error;
-  });
+  const response = await query(
+    `SELECT \`id\` FROM \`${config.server.db_prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
+    [snippetTitle]
+  );
   console.log('snippetGetId', { snippetName, response });
 
   // snippet not installed on the server
-  if (!response.length) return null;
+  if (!Array.isArray(response) || !response.length || !('id' in response[0])) return null;
   return response[0].id;
 }
 
 const query = (() => {
   let connection = null;
+  return query;
 
-  return function query (...args) {
-    try {
-      console.log('query', args);
-      errorHandler = args[args.length - 1];
-      getConnection().then(db => db.query(...args), errorHandler);
-    } catch (error) {
-      console.log('query', args, error);
-    }
+  type RowDataPacket = mysql.RowDataPacket;
+  type OkPacket = mysql.OkPacket;
+  type ResultSetHeader = mysql.ResultSetHeader;
+  type Query = mysql.Query;
+  type QueryOptions = mysql.QueryOptions;
+  type QueryError = mysql.QueryError;
+  type FieldPacket = mysql.FieldPacket;
+  type Cb<T> = (err: QueryError | null, result: T, fields?: FieldPacket[]) => any;
+  type Ftype = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader;
+  type Values = any | any[] | { [param: string]: any };
+
+  function query<T extends Ftype>(sql: string, values: Values): Promise<T> {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('query', { sql, values });
+        const callback: Cb<T> = (error, data) => { if (error) reject(error); else resolve(data); };
+        getConnection().then(
+          db => db.query(sql, values, callback),
+          error => { reject(error); }
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
-  async function getConnection () {
+  async function getConnection (): Promise<mysql.Connection> {
     try {
       if (!connection) {
         connection = getConnectionOptions().then(options => {
-          const db = mysql.getConnection(options);
-          idle.push(() => db.close());
+          const db = mysql.createConnection(options);
+          idle.push(() => db.end());
           return db;
         });
       }
@@ -341,6 +361,10 @@ const query = (() => {
     }
   }
 })();
+
+async function getConnectionOptions (): Promise<ConnectionOptions> {
+  todo();
+}
 
 module.exports.build = parallel(
   watchGulpfile,
@@ -428,12 +452,12 @@ function buildSnippet () {
 /** Preprocess "<<<php_string filename>>>" strings */
 function snippetCodePhpString () {
   return asyncTransform(async (fileVinyl) => {
-    let code = fileVinyl.contents.toString('utf8');
+    let code: string = fileVinyl.contents.toString('utf8');
 
-    const matches = {};
+    const matches: Record<string, string[]> = {};
 
     const phpStringRE = /<<<php_string (?<filename>.*?)\s*>>>/gu;
-    for (const match of code.matchAll(phpStringRE)) {
+    for (const match of Array.from(code.matchAll(phpStringRE))) {
       const { filename } = match.groups;
       const pathname = path.resolve(fileVinyl.dirname, filename);
       matches[pathname] = matches[pathname] ?? [];
@@ -473,7 +497,7 @@ function snippetDocFormat () {
 }
 
 /** Compile snippet JSON form and return the corresponding Vinyl given it's root folder Vinyl */
-function snippetBuildJSON({ code, doc, vinyl }) {
+function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
   if (!code) return;
   const date = new Date();
   const dateFormated = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
@@ -486,7 +510,7 @@ function snippetBuildJSON({ code, doc, vinyl }) {
 
   const snippet = {
     name: snippetGetTitle({ code, doc }, true),
-    scope: 'global',
+    scope,
     code: codeFiltered,
     desc: doc,
     priority: '10',
@@ -538,31 +562,34 @@ function snippetBuildJSON({ code, doc, vinyl }) {
   /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
   function streamToString () {
     let vinyl = null;
-    const stream = new Stream.Writable({ objectMode: true });
+    const stream = new Stream.Writable({
+      objectMode: true,
+      write (data, _encoding, cb) {
+        if (vinyl !== null) {
+          return cb(new Error(
+            'Only one vinyl can be stringified, two received : \n    -' +
+            vinyl.path + '\n    -' + data.path
+          ));
+        }
 
-    stream._write = function write (data, _encoding, cb) {
-      if (vinyl !== null) {
-        return cb(new Error(
-          'Only one vinyl can be stringified, two received : \n    -' +
-          vinyl.path + '\n    -' + data.path
-        ));
+        vinyl = data;
+        cb?.();
       }
+    });
 
-      vinyl = data;
-      cb?.();
-    };
-
-    const result = new Promise ((rs, rj) => {
+    const result: Promise<string> = new Promise ((rs, rj) => {
       stream.on('close', () => rs(vinyl?.contents.toString('utf8')));
       stream.on('error', error => rj(error));
     });
 
-    stream.then = function (cb) { cb(result); };
+    const promise: { then: (cb: ((text: Promise<string>) => void)) => void } = {
+      then (cb) { cb(result); }
+    };
 
-    return stream;
+    return Object.assign(stream, promise);
   }
 
-function todo () {
+function todo (): never {
   console.error(new Error('TODO: cette route n\'est pas terminée'));
   process.exit(1);
 }
@@ -598,7 +625,7 @@ const cache = (() => {
   const store = new WeakMap();
   const undefKey = {};
 
-  return function cache (func, args, thisArg) {
+  return function cache (func, args, thisArg = null) {
     const funcStore = store.has(func) ? store.get(func) : new WeakMap();
     store.set(func, funcStore);
 
@@ -615,7 +642,7 @@ const cache = (() => {
 function exitAtIdle (cb) {
   const to = setInterval(() => {
     try {
-      if (process._getActiveRequests().length) return;
+      if ((process as any)._getActiveRequests().length) return;
       idle.forEach(cb => { cb(); });
       clearInterval(to);
       cb();

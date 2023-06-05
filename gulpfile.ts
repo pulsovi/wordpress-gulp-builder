@@ -565,9 +565,17 @@ function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
         const { name } = options;
         const codeFile = `src/snippets/${name}/${name}.php`;
         const docFile = `src/snippets/${name}/README.md`;
-        return fs.readFile(codeFile, 'utf8').then(code => snippetGetTitle({ code, name }, true)).catch(
-          () => fs.readFile(docFile, 'utf8').then(md => snippetGetTitle({ md, name }, isRequired))
-        );
+        return fs.readFile(codeFile, 'utf8')
+          .then(code => snippetGetTitle({ code, name }, true))
+          .catch(() => fs.exists(docFile))
+          .then(exists => {
+            if (!exists) throw new Error('No docFile found');
+            return fs.readFile(docFile, 'utf8');
+          })
+          .then(md => snippetGetTitle({ md, name }, isRequired))
+          .catch(error => {
+            throw new Error(`Impossible de récuperer le titre du snippet ${name}, ni à partir du fichier de code, ni à partir du fichier de doc.\nPour rendre cette détection possible, ajouter un fichier ${docFile} avec un titre, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code ${codeFile}`);
+          });
       }
 
       if (isRequired) throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
@@ -640,7 +648,7 @@ const cache = (() => {
   const store = new WeakMap();
   const undefKey = {};
 
-  return function cache (func, args, thisArg = null) {
+  return function cache (func, args, thisArg?: object) {
     const funcStore = store.has(func) ? store.get(func) : new WeakMap();
     store.set(func, funcStore);
 
@@ -653,6 +661,10 @@ const cache = (() => {
     return thisArgStore[argsKey];
   };
 })();
+
+function isObject (val): val is Record<PropertyKey, unknown> {
+  return val && typeof val === 'object';
+}
 
 function exitAtIdle (cb) {
   const to = setInterval(() => {

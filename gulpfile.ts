@@ -1,8 +1,9 @@
 import path from 'path';
 import Stream from 'stream';
 
-import fs from 'fs-extra';
+import fsExtra from 'fs-extra';
 import gulp from 'gulp';
+import type { TaskFunction, TaskFunctionCallback } from 'gulp';
 import filter from 'gulp-filter';
 import markdown from 'gulp-markdown';
 import watch from 'gulp-watch';
@@ -11,7 +12,28 @@ import mysql from 'mysql2';
 import pumpify from 'pumpify';
 import Vinyl from 'vinyl';
 
-import type { TaskFunction, TaskFunctionCallback } from 'gulp';
+/** Add stack to fs errors */
+const fs: typeof fsExtra = (() => {
+  const retval: Partial<typeof fsExtra> = {};
+  Object.entries(fsExtra).forEach(([name, func]: [string, any]) => {
+    if (typeof func !== 'function') {
+      retval[name] = func;
+      return;
+    }
+    retval[name as any] = function (...args) {
+      const { stack } = new Error('');
+      try {
+        const result = Reflect.apply(func, this, args);
+        if (!(result instanceof Promise)) return result;
+        return result.catch(error => Promise.reject(Object.assign(error, { stack })));
+      } catch (error) {
+        // Unable to create new Error here, the call stack is already broken
+        return Promise.reject(Object.assign(error, { stack }));
+      }
+    }
+  }, {});
+  return retval as typeof fsExtra;
+})();
 
 const { src, dest, series, parallel, task } = gulp;
 
@@ -26,19 +48,6 @@ const idle: (() => void)[] = [];
 
 Error.stackTraceLimit = Infinity;
 
-/** Add stack to fs errors */
-(() => {
-  Object.entries(fs).forEach(([name, func]) => {
-    if (typeof func !== 'function') return;
-    fs[name as any] = async function (...args) {
-      try {
-        return await Reflect.apply(func, this, args);
-      } catch (error) {
-        throw Object.assign(new Error(error.message), error);
-      }
-    }
-  })
-})();
 
 module.exports.dev = parallel(
   watchGulpfile,

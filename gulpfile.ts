@@ -242,10 +242,10 @@ function snippetServerBind (snippetName, cb) {
 
 async function snippetServerBindCode (snippetName, cb) {
   const codeFile = `src/snippets/${snippetName}/${snippetName}.php`;
-  const stat = await fs.stat(codeFile).catch(error => {
-    if (error.code !== 'ENOENT') throw error;
-    throw new Error(`Impossible de surveiller le snippet ${snippetName}, le fichier ${codeFile} est introuvable.`);
-  });
+  if (!(await fs.exists(codeFile))) {
+    console.log(new Error(`Impossible de surveiller le snippet ${snippetName}, le fichier ${codeFile} est introuvable.`));
+    return cb();
+  }
 
   const codeWatcher = watch(codeFile, { ignoreInitial: false })
     .pipe(log())
@@ -257,7 +257,12 @@ async function snippetServerBindCode (snippetName, cb) {
 
 async function snippetServerBindDoc (snippetName, _cb) {
   const docFile = `src/snippets/${snippetName}/README.md`;
-  const stat = await fs.stat(docFile).catch(error => ({ error }));
+
+  if (!(await fs.exists(docFile))) {
+    console.info(`The doc file for the snippet ${snippetName} is unreachable.`);
+    console.error('TODO: Attendre sa création pour commencer à le suivre');
+  }
+
   const docWatcher = watch(docFile, { ignoreInitial: false })
     .pipe(log())
     .pipe(markdown())

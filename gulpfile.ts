@@ -35,11 +35,14 @@ const fs: typeof fsExtra = (() => {
   return retval as typeof fsExtra;
 })();
 
+interface Database extends mysql.ConnectionOptions {
+  /** Table prefix */
+  prefix: string;
+}
+
 const { src, dest, series, parallel, task } = gulp;
 
-const config = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
-
-interface ConnectionOptions {}
+const config: { server: { root: string; }} = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
 
 const base = 'src';
 
@@ -300,10 +303,11 @@ function snippetServerUpdate (snippetName) {
     // snippet not installed on the server
     if (!snippetId) return cb();
 
+    const db = await getConnectionOptions();
     const column = data.extname === '.php' ? 'code' : 'description';
 
     await query(
-      `UPDATE \`${config.server.db_prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
+      `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
       [data.contents.toString(), snippetId]
     );
 
@@ -314,10 +318,10 @@ function snippetServerUpdate (snippetName) {
 }
 
 async function snippetGetId (snippetName) {
-  console.log('snippetGetId', { snippetName });
+  const db = await getConnectionOptions();
   const snippetTitle = await cache(snippetGetTitle, [{ name: snippetName }, true, true]);
-  const response = await query(
-    `SELECT \`id\` FROM \`${config.server.db_prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
+  const [response] = await query(
+    `SELECT \`id\` FROM \`${db.prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
     [snippetTitle]
   );
   console.log('snippetGetId', { snippetName, response });
@@ -331,36 +335,19 @@ const query = (() => {
   let connection = null;
   return query;
 
-  type RowDataPacket = mysql.RowDataPacket;
-  type OkPacket = mysql.OkPacket;
-  type ResultSetHeader = mysql.ResultSetHeader;
-  type Query = mysql.Query;
-  type QueryOptions = mysql.QueryOptions;
-  type QueryError = mysql.QueryError;
-  type FieldPacket = mysql.FieldPacket;
-  type Cb<T> = (err: QueryError | null, result: T, fields?: FieldPacket[]) => any;
-  type Ftype = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader;
+  type Ftype = mysql.RowDataPacket[][] | mysql.RowDataPacket[] | mysql.OkPacket | mysql.OkPacket[] | mysql.ResultSetHeader;
   type Values = any | any[] | { [param: string]: any };
 
-  function query<T extends Ftype>(sql: string, values: Values): Promise<T> {
-    return new Promise((resolve, reject) => {
-      try {
-        console.log('query', { sql, values });
-        const callback: Cb<T> = (error, data) => { if (error) reject(error); else resolve(data); };
-        getConnection().then(
-          db => db.query(sql, values, callback),
-          error => { reject(error); }
-        );
-      } catch (error) {
-        reject(error);
-      }
-    });
+  async function query<T extends Ftype>(sql: string, values: Values): Promise<[T, mysql.FieldPacket[]]> {
+    const connection = await getConnection();
+    return await connection.promise().query<T>(sql, values);
   }
 
   async function getConnection (): Promise<mysql.Connection> {
     try {
       if (!connection) {
-        connection = getConnectionOptions().then(options => {
+        connection = getConnectionOptions().then(database => {
+          const { prefix, ...options } = database;
           const db = mysql.createConnection(options);
           idle.push(() => db.end());
           return db;
@@ -376,8 +363,21 @@ const query = (() => {
   }
 })();
 
-async function getConnectionOptions (): Promise<ConnectionOptions> {
-  todo();
+async function getConnectionOptions (): Promise<Database> {
+  const configFile = path.join(config.server.root, 'wp-config.php');
+  const configContent = await fs.readFile(configFile, 'utf8');
+  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups.prefix;
+  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.dbname;
+  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.user;
+  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.password;
+
+  if (!database || !user || !password || !prefix) {
+    console.log(configFile);
+    console.log({ database, prefix, user, password });
+    throw new Error('Impossible de lire les informations de configuration dans ce fichier');
+  }
+
+  return { database, prefix, user, password };
 }
 
 module.exports.build = parallel(
@@ -603,7 +603,8 @@ function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
     return Object.assign(stream, promise);
   }
 
-function todo (): never {
+function todo (message = null): never {
+  if (message) console.info(message);
   console.error(new Error('TODO: cette route n\'est pas terminée'));
   process.exit(1);
 }

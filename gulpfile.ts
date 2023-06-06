@@ -136,8 +136,9 @@ function pluginServerDebugBind (pluginName) {
   const cleaner =
     watch(`${config.server.root}/wp-content/plugins/${pluginName}/**`)
     .pipe(log())
-    .pipe(doAction((data) => {
+    .pipe(doAction(async (data: Vinyl) => {
       if (['add'].includes(data.event)) return;
+      if (!(await fs.stat('debug.log')).size) return;
       if (data.event === 'change') fs.truncate(`${config.server.root}/wp-content/debug.log`);
       else console.log(new Error('Unknown event ' + data.event));
     }));

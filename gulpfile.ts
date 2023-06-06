@@ -51,7 +51,6 @@ const idle: (() => void)[] = [];
 
 Error.stackTraceLimit = Infinity;
 
-
 module.exports.dev = parallel(
   watchGulpfile,
   devPlugins,
@@ -108,8 +107,21 @@ function pluginServerBind (pluginName) {
   const cwd = `src/plugins/${pluginName}`;
 
   return pumpify.obj([
+    /**
+     * Fichiers compilés à n'envoyer qu'une fois
+     *
+     * ils sont compilés sur le serveur et sont renvoyés ici par `pluginServerLoadI18n`
+     * si on les suivait avec watch, on aurait une boucle infinie
+     */
     src(['./**/*.po', '**/*.mo'], { base, cwd }),
-    watch(['**/*.php', '**/*.pot'], { base, cwd, ignoreInitial: false }),
+
+    // fichiers à envoyer au serveur sans compilation
+    watch([
+      '**/*.css',
+      '**/*.js',
+      '**/*.php',
+      '**/*.pot',
+    ], { base, cwd, ignoreInitial: false }),
   ])
     .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }));

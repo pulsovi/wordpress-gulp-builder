@@ -260,7 +260,6 @@ function snippetServerBind (snippetName) {
       .pipe(markdown())
       .pipe(mdFilter.restore)
       .pipe(snippetDocFormat())
-      .pipe(log('snippetDocFormat Output'))
       .pipe(phpFilter)
       .pipe(snippetCodePhpString())
       .pipe(snippetCodePhpToSnippet())
@@ -296,10 +295,14 @@ function snippetServerUpdate (snippetName) {
   async function write (data, _encoding, cb) {
     if (!['add', 'change'].includes(data.event)) todo();
 
-    const snippetId = await snippetGetId(snippetName).catch(error => { cb(error); });
+    const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
 
     // snippet not installed on the server
-    if (!snippetId) return cb();
+    if (!snippetId) {
+      const snippetTitle = await snippetGetTitle({ name: snippetName }, false, true);
+      console.info('snippet with title', snippetTitle ?? snippetName, 'not found');
+      return cb();
+    }
 
     const db = await getConnectionOptions();
     const column = data.extname === '.php' ? 'code' : 'description';
@@ -315,14 +318,13 @@ function snippetServerUpdate (snippetName) {
   return stream;
 }
 
-async function snippetGetId (snippetName) {
+async function snippetGetId (snippetName): Promise<number> {
   const db = await getConnectionOptions();
-  const snippetTitle = await cache(snippetGetTitle, [{ name: snippetName }, true, true]);
+  const snippetTitle = await snippetGetTitle({ name: snippetName }, true, true);
   const [response] = await query(
     `SELECT \`id\` FROM \`${db.prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
     [snippetTitle]
   );
-  console.log('snippetGetId', { snippetName, response });
 
   // snippet not installed on the server
   if (!Array.isArray(response) || !response.length || !('id' in response[0])) return null;
@@ -532,7 +534,14 @@ function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
 }
 
   /** retrieve snippet title from its code, doc, or dirname */
-  function snippetGetTitle (options, isRequired = false, async = false) {
+  function snippetGetTitle (options, isRequired: true, async: true): SyncOrPromise<string>;
+  function snippetGetTitle (options, isRequired: true, async?: false): string | never;
+  function snippetGetTitle (options, isRequired: false, async: true): SyncOrPromise<string | null>;
+  function snippetGetTitle (options, isRequired?: false, async?: false): string | null;
+  function snippetGetTitle (options, isRequired?: boolean, async?: boolean): SyncOrPromise<string | null>;
+  function snippetGetTitle (
+    options, isRequired = false, async: boolean = false
+  ): SyncOrPromise<string | null> {
     const codeMatch = options.code?.match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu);
     if (codeMatch) {
       const title = codeMatch.groups.snippetName;
@@ -557,18 +566,18 @@ function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
       const docFile = `src/snippets/${name}/README.md`;
       return fs.readFile(codeFile, 'utf8')
         .then(code => snippetGetTitle({ code, name }, true))
-        .catch(() => fs.exists(docFile))
-        .then(exists => {
-          if (!exists) throw new Error('No docFile found');
-          return fs.readFile(docFile, 'utf8');
-        })
-        .then(md => snippetGetTitle({ md, name }, isRequired))
-        .catch(error => {
+        .catch(async error => {
+          if (await fs.exists(docFile)) {
+            const md = await fs.readFile(docFile, 'utf8');
+            return snippetGetTitle({ md, name }, isRequired);
+          }
+          if (!isRequired) return null;
           throw new Error(`Impossible de récuperer le titre du snippet ${name}, ni à partir du fichier de code, ni à partir du fichier de doc.\nPour rendre cette détection possible, ajouter un fichier ${docFile} avec un titre, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code ${codeFile}`);
         });
     }
 
     if (isRequired) throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
+    return null;
   }
 
   /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
@@ -667,7 +676,10 @@ const cache = (() => {
   const store = new WeakMap();
   const undefKey = {};
 
-  return function cache (func, args, thisArg?: object) {
+  return cache;
+
+  function cache <T extends unknown[], U>(func: (...args: T) => U, args: T, thisArg?: object): U;
+  function cache (func: Function, args?: unknown[], thisArg?: object): unknown {
     const funcStore = store.has(func) ? store.get(func) : new WeakMap();
     store.set(func, funcStore);
 
@@ -678,7 +690,7 @@ const cache = (() => {
     const argsKey = JSON.stringify(args);
     if (!(argsKey in thisArgStore)) thisArgStore[argsKey] = Reflect.apply(func, thisArg, args);
     return thisArgStore[argsKey];
-  };
+  }
 })();
 
 function isObject (val): val is Record<PropertyKey, unknown> {
@@ -697,3 +709,5 @@ function exitAtIdle (cb) {
     }
   }, 200);
 }
+
+type SyncOrPromise<T> = T | Promise<T>;

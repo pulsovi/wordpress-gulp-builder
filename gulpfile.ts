@@ -245,45 +245,30 @@ function devSnippets (cb: TaskFunctionCallback) {
 /** monitors a snippet's source code folder and pushes changes to the build and the server */
 function snippetWatch(snippetName): string {
   const taskName = `snippetWatch(${snippetName})`;
-  task(taskName, series(snippetServerBind.bind(null, snippetName)));
+  task(taskName, series(snippetServerBind(snippetName)));
   return taskName;
 }
 
-function snippetServerBind (snippetName, cb) {
-  return parallel(
-    snippetServerBindCode.bind(null, snippetName),
-    snippetServerBindDoc.bind(null, snippetName),
-  )(cb);
-}
+function snippetServerBind (snippetName) {
+  return async function snippetServerSync (cb: Function) {
+    const phpFilter = filter('**/*.php', { restore: true });
+    const mdFilter = filter('**/*.md', { restore: true });
 
-async function snippetServerBindCode (snippetName, cb) {
-  const codeFile = `src/snippets/${snippetName}/${snippetName}.php`;
-  if (!(await fs.exists(codeFile))) {
-    console.log(new Error(`Impossible de surveiller le snippet ${snippetName}, le fichier ${codeFile} est introuvable.`));
-    return cb();
+    const codeWatcher = watch(`src/snippets/${snippetName}/*.*`, { ignoreInitial: false })
+      .pipe(log())
+      .pipe(mdFilter)
+      .pipe(markdown())
+      .pipe(mdFilter.restore)
+      .pipe(snippetDocFormat())
+      .pipe(log('snippetDocFormat Output'))
+      .pipe(phpFilter)
+      .pipe(snippetCodePhpString())
+      .pipe(snippetCodePhpToSnippet())
+      .pipe(phpFilter.restore)
+      .pipe(snippetServerUpdate(snippetName));
+
+    return codeWatcher;
   }
-
-  const codeWatcher = watch(codeFile, { ignoreInitial: false })
-    .pipe(log())
-    .pipe(snippetCodePhpString())
-    .pipe(snippetCodePhpToSnippet())
-    .pipe(snippetServerUpdate(snippetName));
-
-}
-
-async function snippetServerBindDoc (snippetName, _cb) {
-  const docFile = `src/snippets/${snippetName}/README.md`;
-
-  if (!(await fs.exists(docFile))) {
-    console.info(`The doc file for the snippet ${snippetName} is unreachable.`);
-    console.error('TODO: Attendre sa création pour commencer à le suivre');
-  }
-
-  const docWatcher = watch(docFile, { ignoreInitial: false })
-    .pipe(log())
-    .pipe(markdown())
-    .pipe(snippetDocFormat())
-    .pipe(snippetServerUpdate(snippetName))
 }
 
 function log (prefix = '', transformer = data => [data.event, data.path].join(' ')) {
@@ -457,17 +442,24 @@ async function buildAllSnippets () {
 function buildSnippet () {
   return asyncTransform (async snippetVinyl => {
     try {
-      const [code, doc] = await Promise.all([
-        snippetGetCode(snippetVinyl),
-        snippetGetDoc(snippetVinyl)
-      ]);
-      return snippetBuildJSON({ code, doc, vinyl: snippetVinyl });
+      const code = await snippetGetCode(snippetVinyl);
+      const version = snippetGetVersion(code);
+      const doc = await snippetGetDoc(snippetVinyl, version);
+      return snippetBuildJSON({ code, doc, version, vinyl: snippetVinyl });
     } catch (error) {
       console.log(`Unable to build this snippet : ${snippetVinyl.basename}`);
       console.log(error);
     }
   });
 }
+
+  /** Get the snippet version from snippet code */
+  function snippetGetVersion (code: string): string | null {
+    const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
+    const match = code.match(versionRE);
+    if (match) return match.groups.version;
+    return null;
+  }
 
   /** Get and compile snippet code given it's root folder Vinyl */
   async function snippetGetCode (snippetVinyl) {
@@ -505,35 +497,20 @@ function snippetCodePhpString () {
 }
 
 /** Get the HTML doc of a snippet and the main title of it given it's root folder Vinyl */
-async function snippetGetDoc (snippetVinyl) {
+async function snippetGetDoc (snippetVinyl, version) {
   return src('README.md', { allowEmpty: true, cwd: snippetVinyl.path })
     .pipe(markdown())
-    .pipe(snippetDocFormat())
+    .pipe(snippetDocFormat(version))
     .pipe(streamToString());
 }
 
-function snippetDocFormat () {
-  return transform (data => {
-    const doc = data.contents.toString('utf8');
-    // const filtered = doc.replace(//ug, '🔗');
-    const wrapped = doc && `<details><summary><h1>Documentation</h1></summary>${doc}</details>`;
-
-    data.contents = Buffer.from(wrapped);
-    return data;
-  });
-}
-
 /** Compile snippet JSON form and return the corresponding Vinyl given it's root folder Vinyl */
-function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
+function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
   if (!code) return;
   const date = new Date();
   const dateFormated = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
   const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
-
-  const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
-  const match = codeFiltered.match(versionRE);
-  const version = match ? `-${match.groups.version}` : '';
 
   const snippet = {
     name: snippetGetTitle({ code, doc }, true),
@@ -554,45 +531,45 @@ function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
   return vinyl;
 }
 
-    /** retrieve snippet title from its code, doc, or dirname */
-    function snippetGetTitle (options, isRequired = false, async = false) {
-      const codeMatch = options.code?.match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu);
-      if (codeMatch) {
-        const title = codeMatch.groups.snippetName;
-        if (title) return title;
-      }
-
-      const docMatch = options.doc?.match(/<h1[^>]*>(?<title>.*?)<\/h1>/u);
-      if (docMatch) {
-        const { title } = docMatch.groups;
-        if (title) return title;
-      }
-
-      const mdMatch = options.md?.match(/^# (?<title>.*)\n/u);
-      if (mdMatch) {
-        const { title } = mdMatch.groups;
-        if (title) return title;
-      }
-
-      if (async && options.name) {
-        const { name } = options;
-        const codeFile = `src/snippets/${name}/${name}.php`;
-        const docFile = `src/snippets/${name}/README.md`;
-        return fs.readFile(codeFile, 'utf8')
-          .then(code => snippetGetTitle({ code, name }, true))
-          .catch(() => fs.exists(docFile))
-          .then(exists => {
-            if (!exists) throw new Error('No docFile found');
-            return fs.readFile(docFile, 'utf8');
-          })
-          .then(md => snippetGetTitle({ md, name }, isRequired))
-          .catch(error => {
-            throw new Error(`Impossible de récuperer le titre du snippet ${name}, ni à partir du fichier de code, ni à partir du fichier de doc.\nPour rendre cette détection possible, ajouter un fichier ${docFile} avec un titre, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code ${codeFile}`);
-          });
-      }
-
-      if (isRequired) throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
+  /** retrieve snippet title from its code, doc, or dirname */
+  function snippetGetTitle (options, isRequired = false, async = false) {
+    const codeMatch = options.code?.match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu);
+    if (codeMatch) {
+      const title = codeMatch.groups.snippetName;
+      if (title) return title;
     }
+
+    const docMatch = options.doc?.match(/<h1[^>]*>(?<title>.*?)<\/h1>/u);
+    if (docMatch) {
+      const { title } = docMatch.groups;
+      if (title) return title;
+    }
+
+    const mdMatch = options.md?.match(/^# (?<title>.*)\n/u);
+    if (mdMatch) {
+      const { title } = mdMatch.groups;
+      if (title) return title;
+    }
+
+    if (async && options.name) {
+      const { name } = options;
+      const codeFile = `src/snippets/${name}/${name}.php`;
+      const docFile = `src/snippets/${name}/README.md`;
+      return fs.readFile(codeFile, 'utf8')
+        .then(code => snippetGetTitle({ code, name }, true))
+        .catch(() => fs.exists(docFile))
+        .then(exists => {
+          if (!exists) throw new Error('No docFile found');
+          return fs.readFile(docFile, 'utf8');
+        })
+        .then(md => snippetGetTitle({ md, name }, isRequired))
+        .catch(error => {
+          throw new Error(`Impossible de récuperer le titre du snippet ${name}, ni à partir du fichier de code, ni à partir du fichier de doc.\nPour rendre cette détection possible, ajouter un fichier ${docFile} avec un titre, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code ${codeFile}`);
+        });
+    }
+
+    if (isRequired) throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
+  }
 
   /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
   function streamToString () {
@@ -624,16 +601,45 @@ function snippetBuildJSON({ code, doc, vinyl, scope = 'global' }) {
     return Object.assign(stream, promise);
   }
 
+  /**
+   * Returns a stream which consumes both snippet files and
+   * transforms the html one to snippet doc html string
+   */
+  function snippetDocFormat (version: string | null = null) {
+    let versionFinal = version;
+    return new Stream.Transform({
+      objectMode: true,
+      async transform (data: Vinyl, _encoding, cb) {
+        if (data.extname === '.php') {
+          versionFinal = snippetGetVersion(data.contents.toString());
+          cb(null, data);
+          return;
+        }
+
+        const doc = data.clone();
+        cb();
+        if (!versionFinal) {
+          await new Promise<void>(resolve => {
+            const to = setInterval(() => { if (versionFinal) { clearInterval(to); resolve(); } }, 200);
+          });
+        }
+
+        // const filtered = doc.replace(//ug, '🔗');
+        doc.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${versionFinal}</p><details style="display: inline-block; margin-left:1em;"><summary><h1>Documentation</h1></summary>${data.contents.toString()}</details></div>`);
+        this.push(doc);
+      },
+    });
+  }
 function todo (message = null): never {
   if (message) console.info(message);
   console.error(new Error('TODO: cette route n\'est pas terminée'));
   process.exit(1);
 }
 
-function transform (transformer) {
+function transform (transformer: (data: Vinyl) => Vinyl) {
   const stream = new Stream.Transform({ objectMode: true });
 
-  stream._transform = function (data, _encoding, cb) {
+  stream._transform = function (data: Vinyl, _encoding, cb) {
     this.push(transformer(data));
     cb?.();
   }

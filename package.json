@@ -18,7 +18,6 @@
   },
   "version": "1.0.0",
   "description": "A comprehensive tool that assst the development and compilation of a wordpress project",
-  "main": "index.js",
   "repository": "https://github.com/pulsovi/wordpress-gulp-builder.git",
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPLv3+"

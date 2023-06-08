@@ -1,7 +1,6 @@
 import path from 'path';
 import Stream from 'stream';
 
-import fsExtra from 'fs-extra';
 import gulp from 'gulp';
 import type { TaskFunction, TaskFunctionCallback } from 'gulp';
 import filter from 'gulp-filter';
@@ -12,28 +11,9 @@ import mysql from 'mysql2';
 import pumpify from 'pumpify';
 import Vinyl from 'vinyl';
 
-/** Add stack to fs errors */
-const fs: typeof fsExtra = (() => {
-  const retval: Partial<typeof fsExtra> = {};
-  Object.entries(fsExtra).forEach(([name, func]: [string, any]) => {
-    if (typeof func !== 'function') {
-      retval[name] = func;
-      return;
-    }
-    retval[name as any] = function (...args) {
-      const { stack } = new Error('');
-      try {
-        const result = Reflect.apply(func, this, args);
-        if (!(result instanceof Promise)) return result;
-        return result.catch(error => Promise.reject(Object.assign(error, { stack })));
-      } catch (error) {
-        // Unable to create new Error here, the call stack is already broken
-        return Promise.reject(Object.assign(error, { stack }));
-      }
-    }
-  }, {});
-  return retval as typeof fsExtra;
-})();
+import {
+  fs,
+} from './builder';
 
 interface Database extends mysql.ConnectionOptions {
   /** Table prefix */

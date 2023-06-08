@@ -14,20 +14,18 @@ import Vinyl from 'vinyl';
 import {
   fs,
   log,
+  onIdle,
   snippetGetDoc,
   snippetGetDocFile,
   snippetGetFile,
   snippetGetName,
+  snippetGetTitle,
   snippetGetVersion,
   snippetPhpPreprocessor,
   snippetProcessDoc,
   snippetProcessCode,
+  snippetHotUpdate,
 } from './builder';
-
-interface Database extends mysql.ConnectionOptions {
-  /** Table prefix */
-  prefix: string;
-}
 
 const { src, dest, series, parallel, task } = gulp;
 
@@ -35,8 +33,6 @@ const config: { server: { root: string; }} = JSON.parse(fs.readFileSync('.gulpco
 
 const base = 'src';
 
-/** list of background services "close" functions */
-const idle: (() => void)[] = [];
 
 Error.stackTraceLimit = Infinity;
 
@@ -211,112 +207,14 @@ function devSnippets (cb: TaskFunctionCallback) {
     .pipe(log())
     .pipe(snippetProcessDoc())
     .pipe(snippetProcessCode())
-    .pipe(snippetServerUpdate());
-}
-
-
-function snippetServerUpdate () {
-  const stream = new Stream.Writable({ objectMode: true, write });
-
-  async function write (data, _encoding, cb) {
-    const snippetName = await snippetGetName(data.path);
-    const snippetFiles = [
-      snippetGetFile(snippetName),
-      snippetGetDocFile(snippetName).replace(/.md$/u, '.html'),
-    ];
-    if (!snippetFiles.includes(data.path)) return cb();
-    if (!['add', 'change'].includes(data.event)) todo();
-
-    const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
-
-    // snippet not installed on the server
-    if (!snippetId) {
-      const snippetTitle = await snippetGetTitle({ name: snippetName }, false, true);
-      console.info('snippet with title', snippetTitle ?? snippetName, 'not found on the server, no hot update available');
-      return cb();
-    }
-
-    const db = await getConnectionOptions();
-    const column = data.extname === '.php' ? 'code' : 'description';
-
-    await query(
-      `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
-      [data.contents.toString(), snippetId]
-    );
-
-    cb();
-  }
-
-  return stream;
-}
-
-async function snippetGetId (snippetName): Promise<number> {
-  const db = await getConnectionOptions();
-  const snippetTitle = await snippetGetTitle({ name: snippetName }, true, true);
-  const [response] = await query(
-    `SELECT \`id\` FROM \`${db.prefix}snippets\` WHERE \`name\` = ? LIMIT 1;`,
-    [snippetTitle]
-  );
-
-  // snippet not installed on the server
-  if (!Array.isArray(response) || !response.length || !('id' in response[0])) return null;
-  return response[0].id;
-}
-
-const query = (() => {
-  let connection = null;
-  return query;
-
-  type Ftype = mysql.RowDataPacket[][] | mysql.RowDataPacket[] | mysql.OkPacket | mysql.OkPacket[] | mysql.ResultSetHeader;
-  type Values = any | any[] | { [param: string]: any };
-
-  async function query<T extends Ftype>(sql: string, values: Values): Promise<[T, mysql.FieldPacket[]]> {
-    const connection = await getConnection();
-    return await connection.promise().query<T>(sql, values);
-  }
-
-  async function getConnection (): Promise<mysql.Connection> {
-    try {
-      if (!connection) {
-        connection = getConnectionOptions().then(database => {
-          const { prefix, ...options } = database;
-          const db = mysql.createConnection(options);
-          idle.push(() => db.end());
-          return db;
-        });
-      }
-
-      if (connection instanceof Promise) return await connection;
-
-      return connection;
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-})();
-
-async function getConnectionOptions (): Promise<Database> {
-  const configFile = path.join(config.server.root, 'wp-config.php');
-  const configContent = await fs.readFile(configFile, 'utf8');
-  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups.prefix;
-  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.dbname;
-  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.user;
-  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.password;
-
-  if (!database || !user || !password || !prefix) {
-    console.log(configFile);
-    console.log({ database, prefix, user, password });
-    throw new Error('Impossible de lire les informations de configuration dans ce fichier');
-  }
-
-  return { database, prefix, user, password };
+    .pipe(snippetHotUpdate());
 }
 
 module.exports.build = parallel(
   watchGulpfile,
   buildAllPlugins,
   buildAllSnippets,
-  exitAtIdle,
+  onIdle.start,
 );
 
 function watchGulpfile (cb) {
@@ -327,7 +225,7 @@ function watchGulpfile (cb) {
     process.exit(0);
   });
 
-  idle.push(() => {
+  onIdle(() => {
     watcher.close();
     cb();
   });
@@ -433,7 +331,7 @@ function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
   const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
 
   const snippet = {
-    name: snippetGetTitle({ code, doc }, true),
+    name: snippetGetTitle({ code, html: doc, isRequired: true }),
     scope,
     code: codeFiltered,
     desc: doc,
@@ -450,53 +348,6 @@ function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
   vinyl.path += '/' + vinyl.basename + version + '.code-snippets.json'
   return vinyl;
 }
-
-  /** retrieve snippet title from its code, doc, or dirname */
-  function snippetGetTitle (options, isRequired: true, async: true): SyncOrPromise<string>;
-  function snippetGetTitle (options, isRequired: true, async?: false): string | never;
-  function snippetGetTitle (options, isRequired: false, async: true): SyncOrPromise<string | null>;
-  function snippetGetTitle (options, isRequired?: false, async?: false): string | null;
-  function snippetGetTitle (options, isRequired?: boolean, async?: boolean): SyncOrPromise<string | null>;
-  function snippetGetTitle (
-    options, isRequired = false, async: boolean = false
-  ): SyncOrPromise<string | null> {
-    const codeMatch = options.code?.match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu);
-    if (codeMatch) {
-      const title = codeMatch.groups.snippetName;
-      if (title) return title;
-    }
-
-    const docMatch = options.doc?.match(/<h1[^>]*>(?<title>.*?)<\/h1>/u);
-    if (docMatch) {
-      const { title } = docMatch.groups;
-      if (title) return title;
-    }
-
-    const mdMatch = options.md?.match(/^# (?<title>.*)\n/u);
-    if (mdMatch) {
-      const { title } = mdMatch.groups;
-      if (title) return title;
-    }
-
-    if (async && options.name) {
-      const { name } = options;
-      const codeFile = `src/snippets/${name}/${name}.php`;
-      const docFile = `src/snippets/${name}/README.md`;
-      return fs.readFile(codeFile, 'utf8')
-        .then(code => snippetGetTitle({ code, name }, true))
-        .catch(async error => {
-          if (await fs.exists(docFile)) {
-            const md = await fs.readFile(docFile, 'utf8');
-            return snippetGetTitle({ md, name }, isRequired);
-          }
-          if (!isRequired) return null;
-          throw new Error(`Impossible de récuperer le titre du snippet ${name}, ni à partir du fichier de code, ni à partir du fichier de doc.\nPour rendre cette détection possible, ajouter un fichier ${docFile} avec un titre, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code ${codeFile}`);
-        });
-    }
-
-    if (isRequired) throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
-    return null;
-  }
 
   /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
   function streamToString () {
@@ -584,19 +435,6 @@ const cache = (() => {
 
 function isObject (val): val is Record<PropertyKey, unknown> {
   return val && typeof val === 'object';
-}
-
-function exitAtIdle (cb) {
-  const to = setInterval(() => {
-    try {
-      if ((process as any)._getActiveRequests().length) return;
-      idle.forEach(cb => { cb(); });
-      clearInterval(to);
-      cb();
-    } catch (error) {
-      console.error(error);
-    }
-  }, 200);
 }
 
 type SyncOrPromise<T> = T | Promise<T>;

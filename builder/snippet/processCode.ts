@@ -15,13 +15,13 @@ export function snippetProcessCode (): Stream.Transform {
   const processor = follow();
   const stream = new Stream.Transform({
     objectMode: true,
-    async transform (data: Vinyl, _encoding, cb) {
+    transform (data: Vinyl, _encoding, cb) {
       console.info('snippetProcessCode', data.path);
       const snippetName = snippetGetName(data.path);
       const codeFile = snippetGetFile(snippetName);
 
-      if (data.path !== codeFile) this.push(data);
-      else processor.push(data);
+      if (data.path === codeFile) processor.push(data);
+      else this.push(data);
       cb();
     }
   });
@@ -40,7 +40,7 @@ function snippetCodePhpToSnippet () {
     objectMode: true,
     transform (data, encoding, cb) {
       data.contents = Buffer.from(data.contents.toString('utf8').replace(/^<\?php\s*/u, ''));
-      return data;
+      cb(null, data);
     },
   });
 }

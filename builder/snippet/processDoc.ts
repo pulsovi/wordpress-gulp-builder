@@ -9,18 +9,19 @@ import { snippetGetName } from './getName';
 import { snippetGetVersion } from './getVersion';
 
 /** Return a stream which take README.md file and return the formatted HTML for snippet */
-export function snippetProcessDoc () {
-  const process = follow();
+export function snippetProcessDoc (): Stream.Transform {
+  const processor = follow();
   const stream = new Stream.Transform({
     objectMode: true,
     transform (data: Vinyl, _encoding, cb) {
-      if (data.basename !== 'README.md') this.push(data);
-      else process.push(data);
+      console.info('snippetProcessDoc', data.path);
+      if (data.basename === 'README.md') processor.push(data);
+      else this.push(data);
       cb();
     }
   });
 
-  process
+  processor
     .pipe(markdown())
     .pipe(snippetDocFormat())
     .pipe(follow(stream));

@@ -43,7 +43,9 @@ export function snippetPhpPreprocessor () {
 
           match = getMatch(content);
         }
-        cb();
+
+        data.contents = Buffer.from(content);
+        cb(null, data);
       } catch (error) {
         console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);
         cb();
@@ -53,7 +55,7 @@ export function snippetPhpPreprocessor () {
 }
 
 async function includeRaw (match: RegExpMatchArray, data: Vinyl): Promise<string> {
-  const target = path.resolve(path.basename(data.path), match.groups.arguments);
+  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
   return await fs.readFile(target, 'utf8');
 }
 commands.include_raw = includeRaw;

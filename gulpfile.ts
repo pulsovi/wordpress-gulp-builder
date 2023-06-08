@@ -13,6 +13,7 @@ import Vinyl from 'vinyl';
 
 import {
   fs,
+  snippetGetName,
 } from './builder';
 
 interface Database extends mysql.ConnectionOptions {
@@ -269,10 +270,16 @@ function snippetCodePhpToSnippet () {
   });
 }
 
-function snippetServerUpdate (snippetName) {
+function snippetServerUpdate () {
   const stream = new Stream.Writable({ objectMode: true, write });
 
   async function write (data, _encoding, cb) {
+    const snippetName = await snippetGetName(data.path);
+    const snippetFiles = [
+      snippetGetFile(snippetName),
+      snippetGetDocFile(snippetName).replace(/.md$/u, '.html'),
+    ];
+    if (!snippetFiles.includes(data.path)) return cb();
     if (!['add', 'change'].includes(data.event)) todo();
 
     const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
@@ -280,7 +287,7 @@ function snippetServerUpdate (snippetName) {
     // snippet not installed on the server
     if (!snippetId) {
       const snippetTitle = await snippetGetTitle({ name: snippetName }, false, true);
-      console.info('snippet with title', snippetTitle ?? snippetName, 'not found');
+      console.info('snippet with title', snippetTitle ?? snippetName, 'not found on the server, no hot update available');
       return cb();
     }
 

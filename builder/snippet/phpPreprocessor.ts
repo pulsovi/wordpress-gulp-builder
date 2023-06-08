@@ -27,12 +27,10 @@ export function snippetPhpPreprocessor () {
     objectMode: true,
     async transform (data: Vinyl, _encoding, cb) {
       try {
-        console.info('snippetPhpPreprocessor', data.path);
         let content = data.contents.toString();
         let match = getMatch(content);
 
         while (match) {
-          console.info(match[0]);
           const { command } = match.groups;
 
           if (command in commands) {

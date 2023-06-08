@@ -15,7 +15,6 @@ export function snippetHotUpdate () {
     objectMode: true,
     async write (data: Vinyl, _encoding, cb) {
       try {
-        console.info('snippetHotUpdate', chalk.blue(data.path));
         const snippetName = snippetGetName(data.path);
         const snippetFiles = [
           snippetGetFile(snippetName),

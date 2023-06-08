@@ -14,7 +14,6 @@ export function snippetProcessDoc (): Stream.Transform {
   const stream = new Stream.Transform({
     objectMode: true,
     transform (data: Vinyl, _encoding, cb) {
-      console.info('snippetProcessDoc', data.path);
       if (data.basename === 'README.md') processor.push(data);
       else this.push(data);
       cb();

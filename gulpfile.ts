@@ -3,7 +3,7 @@ import Stream from 'stream';
 
 import gulp from 'gulp';
 import type { TaskFunction, TaskFunctionCallback } from 'gulp';
-import filter from 'gulp-filter';
+import globFilter from 'gulp-filter';
 import markdown from 'gulp-markdown';
 import watch from 'gulp-watch';
 import zip from 'gulp-zip';
@@ -25,6 +25,7 @@ import {
   snippetProcessDoc,
   snippetProcessCode,
   snippetHotUpdate,
+  vinylFilter,
 } from './builder';
 
 const { src, dest, series, parallel, task } = gulp;
@@ -116,11 +117,11 @@ function pluginServerDebugBind (pluginName) {
   const loader =
     watch('debug.log', { cwd: `${config.server.root}/wp-content` })
     .pipe(log())
+    .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat.size)))
     .pipe(dest('.'));
 
   const cleaner =
-    watch(`${config.server.root}/wp-content/plugins/${pluginName}/**`)
-    .pipe(log())
+    watch('src/**/*')
     .pipe(doAction(async (data: Vinyl) => {
       if (['add'].includes(data.event)) return;
       if (!(await fs.stat('debug.log')).size) return;
@@ -239,7 +240,7 @@ async function buildAllPlugins (cb) {
 
 /** Get plugin names and build them */
 async function buildPlugin (pluginName) {
-  const markdownFilter = filter('**/*.md', { restore: true });
+  const markdownFilter = globFilter('**/*.md', { restore: true });
   const zipFile = `${pluginName}_${await getPluginVersion(pluginName)}.zip`;
 
   return src(`${pluginName}/**`, { base: 'src/plugins', cwd: 'src/plugins' })

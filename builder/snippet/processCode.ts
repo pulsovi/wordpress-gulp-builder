@@ -16,7 +16,6 @@ export function snippetProcessCode (): Stream.Transform {
   const stream = new Stream.Transform({
     objectMode: true,
     transform (data: Vinyl, _encoding, cb) {
-      console.info('snippetProcessCode', data.path);
       const snippetName = snippetGetName(data.path);
       const codeFile = snippetGetFile(snippetName);
 

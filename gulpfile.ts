@@ -375,7 +375,7 @@ module.exports.build = parallel(
 );
 
 function watchGulpfile (cb) {
-  const watcher = gulp.watch([__filename, './.gulpconfig.json']);
+  const watcher = gulp.watch([__filename, './.gulpconfig.json', './builder/**/*']);
 
   watcher.on('all', event => {
     console.info('File event :', event, __filename);

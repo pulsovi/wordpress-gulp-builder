@@ -13,7 +13,12 @@ import Vinyl from 'vinyl';
 
 import {
   fs,
+  snippetGetDoc,
+  snippetGetDocFile,
+  snippetGetFile,
   snippetGetName,
+  snippetGetVersion,
+  snippetProcessDoc,
 } from './builder';
 
 interface Database extends mysql.ConnectionOptions {
@@ -433,7 +438,8 @@ function buildSnippet () {
     try {
       const code = await snippetGetCode(snippetVinyl);
       const version = snippetGetVersion(code);
-      const doc = await snippetGetDoc(snippetVinyl, version);
+      const snippetName = snippetGetName(snippetVinyl.path);
+      const doc = await snippetGetDoc(snippetName).pipe(streamToString());
       return snippetBuildJSON({ code, doc, version, vinyl: snippetVinyl });
     } catch (error) {
       console.log(`Unable to build this snippet : ${snippetVinyl.basename}`);
@@ -483,14 +489,6 @@ function snippetCodePhpString () {
     fileVinyl.contents = Buffer.from(code, 'utf8');
     return fileVinyl;
   });
-}
-
-/** Get the HTML doc of a snippet and the main title of it given it's root folder Vinyl */
-async function snippetGetDoc (snippetVinyl, version) {
-  return src('README.md', { allowEmpty: true, cwd: snippetVinyl.path })
-    .pipe(markdown())
-    .pipe(snippetDocFormat(version))
-    .pipe(streamToString());
 }
 
 /** Compile snippet JSON form and return the corresponding Vinyl given it's root folder Vinyl */
@@ -597,35 +595,6 @@ function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
     return Object.assign(stream, promise);
   }
 
-  /**
-   * Returns a stream which consumes both snippet files and
-   * transforms the html one to snippet doc html string
-   */
-  function snippetDocFormat (version: string | null = null) {
-    let versionFinal = version;
-    return new Stream.Transform({
-      objectMode: true,
-      async transform (data: Vinyl, _encoding, cb) {
-        if (data.extname === '.php') {
-          versionFinal = snippetGetVersion(data.contents.toString());
-          cb(null, data);
-          return;
-        }
-
-        const doc = data.clone();
-        cb();
-        if (!versionFinal) {
-          await new Promise<void>(resolve => {
-            const to = setInterval(() => { if (versionFinal) { clearInterval(to); resolve(); } }, 200);
-          });
-        }
-
-        // const filtered = doc.replace(//ug, '🔗');
-        doc.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${versionFinal}</p><details style="display: inline-block; margin-left:1em;"><summary><h1>Documentation</h1></summary>${data.contents.toString()}</details></div>`);
-        this.push(doc);
-      },
-    });
-  }
 function todo (message = null): never {
   if (message) console.info(message);
   console.error(new Error('TODO: cette route n\'est pas terminée'));

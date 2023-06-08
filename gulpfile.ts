@@ -13,12 +13,15 @@ import Vinyl from 'vinyl';
 
 import {
   fs,
+  log,
   snippetGetDoc,
   snippetGetDocFile,
   snippetGetFile,
   snippetGetName,
   snippetGetVersion,
+  snippetPhpPreprocessor,
   snippetProcessDoc,
+  snippetProcessCode,
 } from './builder';
 
 interface Database extends mysql.ConnectionOptions {
@@ -202,78 +205,15 @@ function doAction (action) {
   })
 }
 
-/** Watch on snippets dir and launch a watcher for each snippet */
+/** Watch on snippets dir and update the server version of the snippet on each change */
 function devSnippets (cb: TaskFunctionCallback) {
-  const watchers = {};
-  const watcher = gulp.watch(`src/snippets/*`, {
-    ignoreInitial: false,
-    events: ['addDir', 'unlinkDir']
-  });
-
-  watcher.on('addDir', snippetPath => {
-    const snippetName = path.basename(snippetPath);
-    if (snippetName in watchers) {
-      cb(new Error(`Already watched snippet : ${snippetName}.`));
-      return;
-    }
-
-    watchers[snippetName] = task(snippetWatch(snippetName))(cb);
-  });
-
-  watcher.on('unlinkDir', snippetName => {
-    console.info('snippet removed:', snippetName);
-    todo();
-  });
-
-  return watcher;
+  return watch(`src/snippets/*/*`, { ignoreInitial: false })
+    .pipe(log())
+    .pipe(snippetProcessDoc())
+    .pipe(snippetProcessCode())
+    .pipe(snippetServerUpdate());
 }
 
-/** monitors a snippet's source code folder and pushes changes to the build and the server */
-function snippetWatch(snippetName): string {
-  const taskName = `snippetWatch(${snippetName})`;
-  task(taskName, series(snippetServerBind(snippetName)));
-  return taskName;
-}
-
-function snippetServerBind (snippetName) {
-  return async function snippetServerSync (cb: Function) {
-    const phpFilter = filter('**/*.php', { restore: true });
-    const mdFilter = filter('**/*.md', { restore: true });
-
-    const codeWatcher = watch(`src/snippets/${snippetName}/*.*`, { ignoreInitial: false })
-      .pipe(log())
-      .pipe(mdFilter)
-      .pipe(markdown())
-      .pipe(mdFilter.restore)
-      .pipe(snippetDocFormat())
-      .pipe(phpFilter)
-      .pipe(snippetCodePhpString())
-      .pipe(snippetCodePhpToSnippet())
-      .pipe(phpFilter.restore)
-      .pipe(snippetServerUpdate(snippetName));
-
-    return codeWatcher;
-  }
-}
-
-function log (prefix = '', transformer = data => [data.event, data.path].join(' ')) {
-  if (typeof prefix === 'function') {
-    transformer = prefix;
-    prefix = '';
-  }
-
-  return transform(data => {
-    console.debug(prefix, transformer(data));
-    return data;
-  });
-}
-
-function snippetCodePhpToSnippet () {
-  return transform(data => {
-    data.contents = Buffer.from(data.contents.toString('utf8').replace(/^<\?php\s*/u, ''));
-    return data;
-  });
-}
 
 function snippetServerUpdate () {
   const stream = new Stream.Writable({ objectMode: true, write });
@@ -448,13 +388,6 @@ function buildSnippet () {
   });
 }
 
-  /** Get the snippet version from snippet code */
-  function snippetGetVersion (code: string): string | null {
-    const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
-    const match = code.match(versionRE);
-    if (match) return match.groups.version;
-    return null;
-  }
 
   /** Get and compile snippet code given it's root folder Vinyl */
   async function snippetGetCode (snippetVinyl) {

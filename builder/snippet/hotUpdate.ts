@@ -40,7 +40,7 @@ export function snippetHotUpdate () {
 
         await query(
           `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
-          [data.contents.toString(), snippetId]
+          [data.contents!.toString(), snippetId]
         );
         console.info(chalk.green('HOT UPDATED'), chalk.blue(data.path));
 

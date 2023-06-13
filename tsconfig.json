@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
-    "exactOptionalPropertyTypes": true,
+    "downlevelIteration": true,
     "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
     "moduleResolution": "node",
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "strictNullChecks": true
   },
   "include": ["gulpfile.ts", "builder/**/*.ts"]
 }

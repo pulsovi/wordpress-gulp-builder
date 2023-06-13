@@ -9,7 +9,7 @@ export const fs: typeof fsExtra = (() => {
       return;
     }
     retval[name as any] = function (...args) {
-      let { stack } = new Error('');
+      let stack = new Error('').stack ?? '';
       try {
         const result = Reflect.apply(func, this, args);
         if (!(result instanceof Promise)) return result;

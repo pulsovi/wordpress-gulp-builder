@@ -8,7 +8,7 @@ import { onIdle } from './onIdle';
 const config: { server: { root: string; }} = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
 
 export const query = (() => {
-  let connection = null;
+  let connection: Promise<mysql.Connection> | null = null;
   return query;
 
   type Ftype = mysql.RowDataPacket[][] | mysql.RowDataPacket[] | mysql.OkPacket | mysql.OkPacket[] | mysql.ResultSetHeader;
@@ -43,10 +43,10 @@ export const query = (() => {
 export async function getConnectionOptions (): Promise<Database> {
   const configFile = path.join(config.server.root, 'wp-config.php');
   const configContent = await fs.readFile(configFile, 'utf8');
-  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups.prefix;
-  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.dbname;
-  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.user;
-  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups.password;
+  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups!.prefix;
+  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.dbname;
+  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.user;
+  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.password;
 
   if (!database || !user || !password || !prefix) {
     console.log(configFile);

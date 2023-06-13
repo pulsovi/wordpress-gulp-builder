@@ -37,9 +37,10 @@ export function snippetGetTitle (options: GetTitleOptions): SyncOrPromise<string
   if (syncValue) return syncValue;
 
   if (options.async) {
-    if (!options.name) throw new Error('options.name is required when options.async is true');
-    return getAsyncFromCode(options)
-      .catch(() => getAsyncFromMd(options))
+    if (!('name' in options)) throw new Error('options.name is required when options.async is true');
+    const { name } = options;
+    return getAsyncFromCode({ name })
+      .catch(() => getAsyncFromMd({ name }))
       .catch(() => {
         if (!options.isRequired) return null;
         throw new Error(`Impossible de récuperer le titre du snippet ${chalk.blue(options.name)}, ni à partir du fichier de code, ni à partir du fichier markdown.\nPour rendre cette détection possible, ajouter un fichier "README.md" avec un titre de niveau 1, ou ajouter un [header](obsidian://open?vault=Vaults&file=David%20Gabison%2FArchive%2FPHP%20-%20WordPress%20-%20Snippets%20-%20En%20t%C3%AAte) au fichier de code`);
@@ -55,7 +56,7 @@ function getFromCode (options: GetTitleOptions): string | null {
   return (
     options.code
     .match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu)
-    ?.groups.snippetName
+    ?.groups!.snippetName ?? null
   );
 }
 
@@ -64,7 +65,7 @@ function getFromHtml (options: GetTitleOptions): string | null {
   return (
     options.html
     .match(/<h1[^>]*>(?<title>.*?)<\/h1>/u)
-    ?.groups.title
+    ?.groups!.title ?? null
   );
 }
 
@@ -73,18 +74,22 @@ function getFromMd (options: GetTitleOptions): string | null {
   return (
     options.markdown
     .match(/^# (?<title>.*)\n/u)
-    ?.groups.title
+    ?.groups!.title ?? null
   );
 }
 
-async function getAsyncFromCode (options: GetTitleOptions): Promise<string> {
+async function getAsyncFromCode (options: GetTitleOptions & { name: string }): Promise<string> {
   const codeFile = snippetGetFile(options.name);
   const code = await fs.readFile(codeFile, 'utf8');
-  return getFromCode({ code });
+  const title = getFromCode({ code });
+  if (title) return title;
+  throw new Error('Cannot get title from this code');
 }
 
-async function getAsyncFromMd (options: GetTitleOptions): Promise<string> {
+async function getAsyncFromMd (options: GetTitleOptions & { name: string }): Promise<string> {
   const mdFile = snippetGetDocFile(options.name);
   const markdown = await fs.readFile(mdFile, 'utf8');
-  return getFromMd({ markdown });
+  const title = getFromMd({ markdown });
+  if (title) return title;
+  throw new Error('Cannot get title from this doc');
 }

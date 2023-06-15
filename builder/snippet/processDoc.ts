@@ -13,7 +13,6 @@ import { snippetGetVersion } from './getVersion';
 /** Return a stream which take README.md file and return the formatted HTML for snippet */
 export function snippetProcessDoc (): Stream.Duplex {
   const filter = new StreamFilter((data: Vinyl, _encoding, cb) => {
-    console.log('snippetProcessDoc', data.filename);
     cb(data.basename !== 'README.md');
   }, { objectMode: true, restore: true, passthrough: true });
   return pipelinePart(

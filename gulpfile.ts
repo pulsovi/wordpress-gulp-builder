@@ -4,18 +4,18 @@ import Stream from 'stream';
 import chalk from 'chalk';
 import gulp from 'gulp';
 import type { TaskFunction, TaskFunctionCallback } from 'gulp';
-import globFilter from 'gulp-filter';
 import markdown from 'gulp-markdown';
 import watch from 'gulp-watch';
-import zip from 'gulp-zip';
 import mysql from 'mysql2';
 import pumpify from 'pumpify';
 import Vinyl from 'vinyl';
 
 import {
   fs,
+  github,
   log,
   onIdle,
+  pluginBuildAll,
   snippetBuildAll,
   snippetHotUpdate,
   snippetProcessCode,
@@ -115,7 +115,7 @@ function pluginServerDebugBind (pluginName) {
   const loader =
     watch('debug.log', { cwd: `${config.server.root}/wp-content` })
     .pipe(log())
-    .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat.size)))
+    .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
     .pipe(dest('.'));
 
   const cleaner =
@@ -123,7 +123,6 @@ function pluginServerDebugBind (pluginName) {
     .pipe(doAction(async (data: Vinyl) => {
       if (['add'].includes(data.event)) return;
       if (!(await fs.stat('debug.log')).size) return;
-      if (data.event === 'change') fs.truncate(`${config.server.root}/wp-content/debug.log`);
       if (data.event === 'change') await fs.truncate(`${config.server.root}/wp-content/debug.log`);
       else console.log(new Error('Unknown event ' + data.event));
     }));
@@ -146,18 +145,6 @@ function pluginServerDocumentation (pluginName) {
     .pipe(markdown({ gfm: true }))
     .pipe(github())
     .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }));
-}
-
-function github () {
-  // https://github.com/sindresorhus/github-markdown-css
-  const template = fs.readFile('model.html', 'utf8');
-  return asyncTransform(async data => {
-    const title = data.stem;
-    const body = data.contents.toString();
-    const html = (await template).replace('<<<title>>>', title).replace('<<<body>>>', body);
-    data.contents = Buffer.from(html);
-    return data;
-  });
 }
 
 function unlinkDest (outFolder, opt) {
@@ -211,7 +198,7 @@ function devSnippets (cb: TaskFunctionCallback) {
 }
 
 module.exports.build = parallel(
-  buildAllPlugins,
+  pluginBuildAll,
   snippetBuildAll,
   onIdle.start,
 );
@@ -228,42 +215,6 @@ function watchGulpfile (cb) {
     watcher.close();
     cb();
   });
-}
-
-/** List plugins and build each of them */
-async function buildAllPlugins (cb) {
-  const pluginNames = await fs.readdir('src/plugins');
-  parallel(...pluginNames.map(pluginName => buildPlugin.bind(null, pluginName)))(cb);
-}
-
-/** Get plugin names and build them */
-async function buildPlugin (pluginName) {
-  const markdownFilter = globFilter('**/*.md', { restore: true });
-  const zipFile = `${pluginName}_${await getPluginVersion(pluginName)}.zip`;
-
-  return src(`${pluginName}/**`, { base: 'src/plugins', cwd: 'src/plugins' })
-    .pipe(markdownFilter)
-    .pipe(markdown({ gfm: true }))
-    .pipe(github())
-    .pipe(markdownFilter.restore)
-    .pipe(zip(zipFile))
-    .pipe(dest(`build/plugins/${pluginName}`));
-  }
-}
-
-  async function getPluginVersion (pluginName) {
-    const pluginFile = `src/plugins/${pluginName}/${pluginName}.php`;
-    const content = await fs.readFile(pluginFile, 'utf8');
-    const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
-    const match = content.match(versionRE);
-    if (!match) throw new Error(`Unable to find version of this plugin : ${pluginName}`);
-    return match.groups!.version;
-  }
-
-function todo (message = null): never {
-  if (message) console.info(message);
-  console.error(new Error('TODO: cette route n\'est pas terminée'));
-  process.exit(1);
 }
 
 function transform (transformer: (data: Vinyl) => Vinyl) {

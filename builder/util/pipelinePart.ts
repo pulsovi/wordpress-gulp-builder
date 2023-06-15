@@ -4,9 +4,8 @@ import { follow } from './follow';
 import { stop } from './todo';
 
 /**
- * Get a list of streams
- * pipe each to the following one and
- * return new Stream wich can be used as input / output of the pipeline
+ * Get a list of streams, pipe each to the following one and return new Stream
+ * wich can be used as input / output of the pipeline
  */
 export function pipelinePart (input: Stream.Duplex, ...streams: Stream.Duplex[]): Stream.Duplex {
   if (!streams.length) return input;
@@ -15,8 +14,7 @@ export function pipelinePart (input: Stream.Duplex, ...streams: Stream.Duplex[])
     objectMode: true,
     transform (data, encoding, cb) {
       try {
-        input.push(data, encoding);
-        cb();
+        input.write(data, encoding, cb);
       } catch (error) {
         stop();
         cb(error);

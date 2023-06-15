@@ -1,36 +1,31 @@
 import Stream from 'stream';
 
-import markdown from 'gulp-markdown';
+import StreamFilter from 'streamfilter';
 import type Vinyl from 'vinyl';
 
-import { follow } from '../util';
+import { pipelinePart } from '../util/pipelinePart';
 
 import { snippetGetFile } from './getFile';
 import { snippetGetName } from './getName';
-import { snippetGetVersion } from './getVersion';
 import { snippetPhpPreprocessor } from './phpPreprocessor';
 
 /** Return a Stream.Transform which process snippet code file */
-export function snippetProcessCode (): Stream.Transform {
-  const processor = follow();
-  const stream = new Stream.Transform({
-    objectMode: true,
-    transform (data: Vinyl, _encoding, cb) {
+export function snippetProcessCode (): Stream.Duplex {
+  const filter = new StreamFilter(
+    (data: Vinyl, _encoding, cb) => {
       const snippetName = snippetGetName(data.path);
       const codeFile = snippetGetFile(snippetName);
+      cb(data.path !== codeFile);
+    },
+    { objectMode: true, restore: true, passthrough: true }
+  );
 
-      if (data.path === codeFile) processor.push(data);
-      else this.push(data);
-      cb();
-    }
-  });
-
-  processor
-    .pipe(snippetPhpPreprocessor())
-    .pipe(snippetCodePhpToSnippet())
-    .pipe(follow(stream));
-
-  return stream;
+  return pipelinePart(
+    filter,
+    snippetPhpPreprocessor(),
+    snippetCodePhpToSnippet(),
+    filter.restore
+  );
 }
 
 /** trim `<?php` from start of the file */

@@ -26,17 +26,13 @@ export function snippetPhpPreprocessor () {
   return new Stream.Transform({
     objectMode: true,
     async transform (data: Vinyl, _encoding, cb) {
-      console.log('snippetPhpPreprocessor', data.basename);
-      _snippetPhpPreprocessor(data).then(
-        () => {
-          console.log('snippetPhpPreprocessor END', data.basename);
-          cb(null, data);
-        },
-        error => {
-          console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);
-          cb();
-        }
-      );
+      try {
+        await _snippetPhpPreprocessor(data)
+        cb(null, data);
+      } catch (error) {
+        console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);
+        cb(error);
+      }
     },
   });
 }

@@ -4,7 +4,10 @@ import { snippetGetFile } from './getFile';
 
 /** Get the snippet version from snippet code */
 export async function snippetGetVersion (options: { name: string } | { code: string }): Promise<string> {
-  if (!(options as any).name && !(options as any).code) throw new Error('invalid parameters');
+  if (!(options as any).name && !(options as any).code) {
+    console.log('snippetGetVersion invalid parameters', options);
+    throw new Error('snippetGetVersion invalid parameters');
+  }
   const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
 
   let code = '';

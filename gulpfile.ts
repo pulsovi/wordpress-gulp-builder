@@ -260,7 +260,7 @@ const cache = (() => {
     funcStore.set(thisArgKey, thisArgStore);
 
     const argsKey = JSON.stringify(args);
-    if (!(argsKey in thisArgStore)) thisArgStore[argsKey] = Reflect.apply(func, thisArg, args);
+    if (!(argsKey in thisArgStore)) thisArgStore[argsKey] = Reflect.apply(func, thisArg, args ?? []);
     return thisArgStore[argsKey];
   }
 })();

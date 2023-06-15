@@ -1,2 +1,9 @@
 # Editor files
 *.sublime-workspace
+
+# yarn files
+/.pnp.cjs
+/.pnp.loader.mjs
+/.yarn/cache
+/.yarn/install-state.gz
+/.yarn/unplugged

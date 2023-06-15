@@ -131,7 +131,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/gulp@npm:^4":
+"@types/gulp@npm:4.0.11":
   version: 4.0.11
   resolution: "@types/gulp@npm:4.0.11"
   dependencies:
@@ -139,6 +139,17 @@ __metadata:
     "@types/vinyl-fs": "*"
     chokidar: ^3.3.1
   checksum: 55b84c83bcbc55b20d3d4018dd229f46fbfa05d2b8852477bd88c3ae4ac2ee9a28c8767484bd052ecadbbb73007848655015006f9a4277d00b881f4d273670ed
+  languageName: node
+  linkType: hard
+
+"@types/gulp@patch:@types/gulp@npm%3A4.0.11#patches/@types/gulp.patch::locator=wordpress-gulp-builder%40workspace%3A.":
+  version: 4.0.11
+  resolution: "@types/gulp@patch:@types/gulp@npm%3A4.0.11#patches/@types/gulp.patch::version=4.0.11&hash=4a2498&locator=wordpress-gulp-builder%40workspace%3A."
+  dependencies:
+    "@types/undertaker": ">=1.2.6"
+    "@types/vinyl-fs": "*"
+    chokidar: ^3.3.1
+  checksum: d224aafb6d1b0cec789c3c8506e1302773a63dd1565d6edc45f029408d35687f781cca875300531396636d26a3b6e493ff978bf6733bc5c128e6efe6256657b0
   languageName: node
   linkType: hard
 
@@ -1205,6 +1216,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"easy-transform-stream@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "easy-transform-stream@npm:1.0.0"
+  checksum: d3d3294a3c5548a591061a67efa62705fc741dd7871221f0ebb8f8a5718d2ac0d51a2fe41975e43e403d4a261eb5b1e3bda31a9fd7c7d895a4a59ae100a8d514
+  languageName: node
+  linkType: hard
+
 "emoji-regex@npm:^8.0.0":
   version: 8.0.0
   resolution: "emoji-regex@npm:8.0.0"
@@ -1953,11 +1971,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gulp-markdown@npm:^6":
-  version: 6.0.0
-  resolution: "gulp-markdown@npm:6.0.0"
+"gulp-markdown@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "gulp-markdown@npm:7.0.0"
   dependencies:
-    marked: ^2.0.1
+    easy-transform-stream: ^1.0.0
+    marked: ^4.0.16
     plugin-error: ^1.0.1
     through2: ^4.0.2
   peerDependencies:
@@ -1965,7 +1984,7 @@ __metadata:
   peerDependenciesMeta:
     gulp:
       optional: true
-  checksum: e1647507b8f6f8aee3f6b72d1465b8842e37108b8f3943f0aece7f8c5f6c87f2ed6ba8b56a1fb75c0cfb3fedb06584c3ef5bd5089601723aed0fd362ab923f7a
+  checksum: 23810eae65c74888909b2acc1da034c15322d2d599995206363188c50e3657d0a49285779556cc89542518404ba3a6e89d0c158bd79d70c12f2be63d1a6a6d8b
   languageName: node
   linkType: hard
 
@@ -2809,12 +2828,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^2.0.1":
-  version: 2.1.3
-  resolution: "marked@npm:2.1.3"
+"marked@npm:^4.0.16":
+  version: 4.3.0
+  resolution: "marked@npm:4.3.0"
   bin:
-    marked: bin/marked
-  checksum: 21a5ecd4941bc760aba21dfd97185853ec3b464cf707ad971e3ddb3aeb2f44d0deeb36b0889932afdb6f734975a994d92f18815dd0fabadbd902bdaff997cc5b
+    marked: bin/marked.js
+  checksum: 0db6817893952c3ec710eb9ceafb8468bf5ae38cb0f92b7b083baa13d70b19774674be04db5b817681fa7c5c6a088f61300815e4dd75a59696f4716ad69f6260
   languageName: node
   linkType: hard
 
@@ -4771,12 +4790,12 @@ __metadata:
   resolution: "wordpress-gulp-builder@workspace:."
   dependencies:
     "@types/fs-extra": ^11
-    "@types/gulp": ^4
+    "@types/gulp": "patch:@types/gulp@npm%3A4.0.11#patches/@types/gulp.patch"
     chokidar: ^3.5.3
     fs-extra: ^11.1.1
     gulp: ^4.0.2
     gulp-filter: ^7.0.0
-    gulp-markdown: ^6
+    gulp-markdown: ^7.0.0
     gulp-watch: ^5.0.1
     gulp-zip: ^5.1.0
     mysql2: ^3.2.4

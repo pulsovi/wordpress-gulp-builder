@@ -7,15 +7,22 @@ import type Vinyl from 'vinyl';
 import fs from 'fs-extra';
 
 const commands: Record<string, ((match: RegExpMatchArray, data: Vinyl) => Promise<string>)> = {};
-const preprocessPhpRE = /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u;
-const preprocessHtmlRE = /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u;
+const commandRE = [
+  /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
+  /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
+  /('|")<<<(?<command>php_string) (?<arguments>[^>]*)>>>\1/u,
+
+  /* ↓ this line MUST be the last ↓ */
+  /<<<(?<command>php_string) (?<arguments>[^>]*)>>>/u,
+]
 
 /** return match of `content` against preprocess regexps */
 function getMatch (content: string): RegExpMatchArray | null {
-  return (
-    content.match(preprocessPhpRE) ??
-    content.match(preprocessHtmlRE)
-  );
+  for (const regexp of commandRE) {
+    const match = content.match(regexp);
+    if (match) return match;
+  }
+  return null;
 }
 
 /**
@@ -62,3 +69,10 @@ async function includeRaw (match: RegExpMatchArray, data: Vinyl): Promise<string
   return await fs.readFile(target, 'utf8');
 }
 commands.include_raw = includeRaw;
+
+async function phpString (match: RegExpMatchArray, data: Vinyl): Promise<string> {
+  const content = await includeRaw(match, data);
+  const phpString = `'${content.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
+  return phpString;
+}
+commands.php_string = phpString;

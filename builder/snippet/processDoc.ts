@@ -2,30 +2,26 @@ import Stream from 'stream';
 
 import markdown from 'gulp-markdown';
 import type Vinyl from 'vinyl';
+import StreamFilter from 'streamfilter'
 
-import { follow } from '../util';
+import { pipelinePart } from '../util/pipelinePart';
+import { stop } from '../util/todo';
 
 import { snippetGetName } from './getName';
 import { snippetGetVersion } from './getVersion';
 
 /** Return a stream which take README.md file and return the formatted HTML for snippet */
-export function snippetProcessDoc (): Stream.Transform {
-  const processor = follow();
-  const stream = new Stream.Transform({
-    objectMode: true,
-    transform (data: Vinyl, _encoding, cb) {
-      if (data.basename === 'README.md') processor.push(data);
-      else this.push(data);
-      cb();
-    }
-  });
-
-  processor
-    .pipe(markdown())
-    .pipe(snippetDocFormat())
-    .pipe(follow(stream));
-
-  return stream;
+export function snippetProcessDoc (): Stream.Duplex {
+  const filter = new StreamFilter((data: Vinyl, _encoding, cb) => {
+    console.log('snippetProcessDoc', data.filename);
+    cb(data.basename !== 'README.md');
+  }, { objectMode: true, restore: true, passthrough: true });
+  return pipelinePart(
+    filter,
+    markdown(),
+    snippetDocFormat(),
+    filter.restore,
+  );
 }
 
 /**
@@ -38,13 +34,13 @@ function snippetDocFormat () {
     async transform (data: Vinyl, _encoding, cb) {
       try {
         const snippetName = snippetGetName(data.path);
-        const version = await snippetGetVersion(snippetName);
-
+        const version = await snippetGetVersion({ name: snippetName });
         // const filtered = doc.replace(//ug, '🔗');
-        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version}</p><details style="display: inline-block; margin-left:1em;"><summary><h1>Documentation</h1></summary>${data.contents.toString()}</details></div>`);
+        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version}</p><details style="display: inline-block; margin-left:1em;"><summary><h1>Documentation</h1></summary>${data.contents!.toString()}</details></div>`);
         cb(null, data);
       } catch (error) {
-        console.info('SNIPPET DOC FORMAT ERROR');
+        stop();
+        console.info('SNIPPET DOC FORMAT ERROR', error.message);
         cb(error);
       }
     },

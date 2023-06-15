@@ -1,6 +1,7 @@
 import path from 'path';
 import Stream from 'stream';
 
+import chalk from 'chalk';
 import gulp from 'gulp';
 import type { TaskFunction, TaskFunctionCallback } from 'gulp';
 import globFilter from 'gulp-filter';
@@ -15,18 +16,15 @@ import {
   fs,
   log,
   onIdle,
-  snippetGetDoc,
-  snippetGetDocFile,
-  snippetGetFile,
-  snippetGetName,
-  snippetGetTitle,
-  snippetGetVersion,
-  snippetPhpPreprocessor,
-  snippetProcessDoc,
-  snippetProcessCode,
+  snippetBuildAll,
   snippetHotUpdate,
+  snippetProcessCode,
+  snippetProcessDoc,
+  todo,
   vinylFilter,
 } from './builder';
+
+Error.stackTraceLimit = Infinity;
 
 const { src, dest, series, parallel, task } = gulp;
 
@@ -126,6 +124,7 @@ function pluginServerDebugBind (pluginName) {
       if (['add'].includes(data.event)) return;
       if (!(await fs.stat('debug.log')).size) return;
       if (data.event === 'change') fs.truncate(`${config.server.root}/wp-content/debug.log`);
+      if (data.event === 'change') await fs.truncate(`${config.server.root}/wp-content/debug.log`);
       else console.log(new Error('Unknown event ' + data.event));
     }));
 
@@ -212,17 +211,16 @@ function devSnippets (cb: TaskFunctionCallback) {
 }
 
 module.exports.build = parallel(
-  watchGulpfile,
   buildAllPlugins,
-  buildAllSnippets,
+  snippetBuildAll,
   onIdle.start,
 );
 
 function watchGulpfile (cb) {
   const watcher = gulp.watch([__filename, './.gulpconfig.json', './builder/**/*']);
 
-  watcher.on('all', event => {
-    console.info('File event :', event, __filename);
+  watcher.on('all', (event, filename) => {
+    console.info('File event :', event, filename);
     process.exit(0);
   });
 
@@ -250,6 +248,7 @@ async function buildPlugin (pluginName) {
     .pipe(markdownFilter.restore)
     .pipe(zip(zipFile))
     .pipe(dest(`build/plugins/${pluginName}`));
+  }
 }
 
   async function getPluginVersion (pluginName) {
@@ -258,126 +257,7 @@ async function buildPlugin (pluginName) {
     const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
     const match = content.match(versionRE);
     if (!match) throw new Error(`Unable to find version of this plugin : ${pluginName}`);
-    return match.groups.version;
-  }
-
-/** List snippets and build each of them */
-async function buildAllSnippets () {
-  const stream = src('./src/snippets/*', { base: 'src' })
-    .pipe(buildSnippet())
-    .pipe(dest('./build'));
-  const result = await new Promise(rs => { stream.on('close', rs); stream.on('end', rs); });
-
-  return result;
-}
-
-/** Get snippet names and build them */
-function buildSnippet () {
-  return asyncTransform (async snippetVinyl => {
-    try {
-      const code = await snippetGetCode(snippetVinyl);
-      const version = snippetGetVersion(code);
-      const snippetName = snippetGetName(snippetVinyl.path);
-      const doc = await snippetGetDoc(snippetName).pipe(streamToString());
-      return snippetBuildJSON({ code, doc, version, vinyl: snippetVinyl });
-    } catch (error) {
-      console.log(`Unable to build this snippet : ${snippetVinyl.basename}`);
-      console.log(error);
-    }
-  });
-}
-
-
-  /** Get and compile snippet code given it's root folder Vinyl */
-  async function snippetGetCode (snippetVinyl) {
-    return await src(`${snippetVinyl.basename}.php`, { cwd: snippetVinyl.path, allowEmpty: true })
-      .pipe(snippetCodePhpString())
-      .pipe(streamToString());
-  }
-
-/** Preprocess "<<<php_string filename>>>" strings */
-function snippetCodePhpString () {
-  return asyncTransform(async (fileVinyl) => {
-    let code: string = fileVinyl.contents.toString('utf8');
-
-    const matches: Record<string, string[]> = {};
-
-    const phpStringRE = /<<<php_string (?<filename>.*?)\s*>>>/gu;
-    for (const match of Array.from(code.matchAll(phpStringRE))) {
-      const { filename } = match.groups;
-      const pathname = path.resolve(fileVinyl.dirname, filename);
-      matches[pathname] = matches[pathname] ?? [];
-      if (!matches[pathname].includes(match[0])) matches[pathname].push(match[0]);
-    }
-
-    await Promise.all(Object.entries(matches).map(async ([destFile, strings]) => {
-      const fileContent = await fs.readFile(destFile, 'utf8');
-      const phpString = `'${fileContent.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
-      strings.forEach(string => {
-        code = code.replace(new RegExp(string, 'gu'), phpString);
-      });
-    }));
-
-    fileVinyl.contents = Buffer.from(code, 'utf8');
-    return fileVinyl;
-  });
-}
-
-/** Compile snippet JSON form and return the corresponding Vinyl given it's root folder Vinyl */
-function snippetBuildJSON({ code, doc, version, vinyl, scope = 'global' }) {
-  if (!code) return;
-  const date = new Date();
-  const dateFormated = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-
-  const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
-
-  const snippet = {
-    name: snippetGetTitle({ code, html: doc, isRequired: true }),
-    scope,
-    code: codeFiltered,
-    desc: doc,
-    priority: '10',
-  };
-  const data = {
-    generator: 'Code Snippets v3.3.0',
-    date_created: dateFormated,
-    snippets: [snippet],
-  };
-
-  const jsonString = JSON.stringify(data, null, 2).replace(/\//gu, '\\/');
-  vinyl.contents = Buffer.from(jsonString, 'utf8');
-  vinyl.path += '/' + vinyl.basename + version + '.code-snippets.json'
-  return vinyl;
-}
-
-  /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
-  function streamToString () {
-    let vinyl = null;
-    const stream = new Stream.Writable({
-      objectMode: true,
-      write (data, _encoding, cb) {
-        if (vinyl !== null) {
-          return cb(new Error(
-            'Only one vinyl can be stringified, two received : \n    -' +
-            vinyl.path + '\n    -' + data.path
-          ));
-        }
-
-        vinyl = data;
-        cb?.();
-      }
-    });
-
-    const result: Promise<string> = new Promise ((rs, rj) => {
-      stream.on('close', () => rs(vinyl?.contents.toString('utf8')));
-      stream.on('error', error => rj(error));
-    });
-
-    const promise: { then: (cb: ((text: Promise<string>) => void)) => void } = {
-      then (cb) { cb(result); }
-    };
-
-    return Object.assign(stream, promise);
+    return match.groups!.version;
   }
 
 function todo (message = null): never {

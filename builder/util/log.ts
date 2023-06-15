@@ -2,7 +2,9 @@ import Stream from 'stream';
 
 import type Vinyl from 'vinyl';
 
-export function log (prefix = '', transformer = data => [data.event, data.path].join(' ')) {
+export function log (prefix?: string, transformer?: (data: Vinyl) => string): Stream.Transform;
+export function log (transformer: (data: Vinyl) => string): Stream.Transform;
+export function log (prefix: string | ((data: Vinyl) => string) = '', transformer = (data: Vinyl) => [data.event, data.path].join(' ')): Stream.Transform {
   if (typeof prefix === 'function') {
     transformer = prefix;
     prefix = '';
@@ -11,7 +13,8 @@ export function log (prefix = '', transformer = data => [data.event, data.path].
   return new Stream.Transform({
     objectMode: true,
     transform (data: Vinyl, _encoding, cb) {
-      console.debug(prefix, transformer(data));
+      if (prefix) console.debug(prefix, transformer(data));
+      else console.debug(transformer(data));
       cb(null, data);
     }
   });

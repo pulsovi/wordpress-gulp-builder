@@ -26,12 +26,12 @@ export function pluginBuild () {
 }
 
 function pluginBuildTask (pluginName, version) {
-  const zipFile = `${pluginName}_${version}.zip`;
+  const zipFile = `${pluginName}/${pluginName}_${version}.zip`;
   return pipelineFollowError(
-    src(`src/plugins/${pluginName}/**/*`, { base: 'src' }),
+    src(`${pluginName}/**/*`, { cwd: 'src/plugins', base: 'src/plugins' }),
     pluginProcessDoc(),
     zip(zipFile),
-    dest('build'),
+    dest('build/plugins'),
     log(data => `${chalk.blue(pluginName)} PLUGIN successfully built`)
   );
 }

@@ -18,6 +18,7 @@ export function snippetHotUpdate () {
         const snippetName = snippetGetName(data.path);
         const snippetFiles = [
           snippetGetFile(snippetName),
+          snippetGetFile(snippetName, 'html'),
           snippetGetDocFile(snippetName).replace(/.md$/u, '.html'),
         ];
         if (!snippetFiles.includes(data.path)) return cb();
@@ -36,7 +37,7 @@ export function snippetHotUpdate () {
         }
 
         const db = await getConnectionOptions();
-        const column = data.extname === '.php' ? 'code' : 'description';
+        const column = data.stem === snippetName ? 'code' : 'description';
 
         await query(
           `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,

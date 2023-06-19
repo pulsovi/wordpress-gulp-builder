@@ -79,7 +79,8 @@ function getFromMd (options: GetTitleOptions): string | null {
 }
 
 async function getAsyncFromCode (options: GetTitleOptions & { name: string }): Promise<string> {
-  const codeFile = snippetGetFile(options.name);
+  let codeFile = snippetGetFile(options.name);
+  if (!await fs.exists(codeFile)) codeFile = snippetGetFile(options.name, 'html');
   const code = await fs.readFile(codeFile, 'utf8');
   const title = getFromCode({ code });
   if (title) return title;

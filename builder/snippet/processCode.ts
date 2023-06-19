@@ -14,8 +14,9 @@ export function snippetProcessCode (): Stream.Duplex {
   const filter = new StreamFilter(
     (data: Vinyl, _encoding, cb) => {
       const snippetName = snippetGetName(data.path);
-      const codeFile = snippetGetFile(snippetName);
-      cb(data.path !== codeFile);
+      const phpCodeFile = snippetGetFile(snippetName);
+      const htmlCodeFile = snippetGetFile(snippetName, 'html');
+      cb(![phpCodeFile, htmlCodeFile].includes(data.path));
     },
     { objectMode: true, restore: true, passthrough: true }
   );

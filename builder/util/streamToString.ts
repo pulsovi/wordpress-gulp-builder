@@ -2,8 +2,13 @@ import Stream from 'stream';
 
 import type Vinyl from 'vinyl';
 
+interface StreamToStringOptions {
+  /** what to do if more than one file is given to the toString stream */
+  other: 'error' | 'ignore';
+}
+
 /** Return a StreamWritable with .then() method wich return the contents of the Vinyl */
-export function streamToString (id?: string): Stream.Writable & PromiseLike<string> {
+export function streamToString (options?: StreamToStringOptions): Stream.Writable & PromiseLike<string> {
   const stream = new Stream.Writable({ objectMode: true });
   const result = new Promise<string>((resolve, reject) => {
     let end = false;
@@ -11,6 +16,7 @@ export function streamToString (id?: string): Stream.Writable & PromiseLike<stri
     stream._write = (data: Vinyl, _encoding, cb) => {
       try {
         if (end) {
+          if (options?.other === 'ignore') return cb();
           cb(new Error('Only one vinyl can be stringified'));
           return;
         }

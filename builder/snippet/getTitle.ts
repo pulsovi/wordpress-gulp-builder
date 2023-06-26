@@ -1,9 +1,9 @@
 import chalk from 'chalk';
 import fs from 'fs-extra';
 
-import type { SyncOrPromise } from '../util';
-
 import { snippetGetDocFile, snippetGetFile } from './getFile';
+
+type SyncOrPromise<T> = T | Promise<T>;
 
 interface GetTitleOptions {
   /**

@@ -31,17 +31,21 @@ export function snippetBuild () {
   });
 }
 
+interface SnippetBuildJsonOptions {
+  code: string;
+  doc: string;
+  version: string;
+  vinyl: Vinyl;
+}
+
 /** Compile snippet JSON form and return the corresponding Vinyl given it's root folder Vinyl */
-function snippetBuildJSON({
-  code, doc, version, vinyl, scope = 'global'
-}: {
-  code: string; doc: string; version: string; vinyl: Vinyl; scope?: 'global'
-}): Vinyl {
+function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions): Vinyl {
   if (!code) throw new Error('Unable to build snippet without code');
   const date = new Date();
   const dateFormated = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
   const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
+  const scope = snippetGetScope(code);
 
   const snippet = {
     name: snippetGetTitle({ code, html: doc, isRequired: true }),
@@ -60,4 +64,23 @@ function snippetBuildJSON({
   vinyl.contents = Buffer.from(jsonString, 'utf8');
   vinyl.path += '/' + vinyl.basename + '_' + version + '.code-snippets.json'
   return vinyl;
+}
+
+/**
+ * Scope of the snippet :
+ * - global is normal php snippet
+ * - content is html injectable as shortcode
+ * - front-end is php snippet which is disabled on admin back-office
+ */
+type Scope = 'global' | 'content' | 'front-end';
+function snippetGetScope (code: string): Scope {
+  const match = code.match(/^ \* Scope: (?<scope>.*)$/mu);
+  if (!match) return 'global';
+  const result = match.groups?.scope;
+  if (!isScope(result)) throw new Error(`Unknown scope: ${result}`);
+  return result;
+}
+
+function isScope (value?: string): value is Scope {
+  return ['global', 'content', 'front-end'].includes(value!);
 }

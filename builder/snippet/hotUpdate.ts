@@ -27,11 +27,11 @@ export function snippetHotUpdate () {
           return cb();
         }
 
+        const snippetTitle = await snippetGetTitle({ name: snippetName, async: true });
         const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
 
         // snippet not installed on the server
         if (!snippetId) {
-          const snippetTitle = await snippetGetTitle({ name: snippetName, async: true });
           console.info('snippet with title', snippetTitle ?? snippetName, 'not found on the server, no hot update available');
           return cb();
         }
@@ -43,7 +43,7 @@ export function snippetHotUpdate () {
           `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
           [data.contents!.toString(), snippetId]
         );
-        console.info(chalk.green('HOT UPDATED'), chalk.blue(data.path));
+        console.info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);
 
         cb();
       } catch (error) {

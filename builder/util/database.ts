@@ -7,38 +7,42 @@ import { onIdle } from './onIdle';
 
 const config: { server: { root: string; }} = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
 
-export const query = (() => {
-  let connection: Promise<mysql.Connection> | null = null;
-  return query;
+type SyncOrPromise<T> = T | Promise<T>;
 
-  type Ftype = mysql.RowDataPacket[][] | mysql.RowDataPacket[] | mysql.OkPacket | mysql.OkPacket[] | mysql.ResultSetHeader;
-  type Values = any | any[] | { [param: string]: any };
+type Ftype = mysql.RowDataPacket[][] | mysql.RowDataPacket[] | mysql.OkPacket | mysql.OkPacket[] | mysql.ResultSetHeader;
+type Values = any | any[] | { [param: string]: any };
+export async function query<T extends Ftype>(sql: string, values: Values): Promise<[T, mysql.FieldPacket[]]> {
+  const connection = await getConnection();
+  return await connection.promise().query<T>(sql, values);
+}
 
-  async function query<T extends Ftype>(sql: string, values: Values): Promise<[T, mysql.FieldPacket[]]> {
-    const connection = await getConnection();
-    return await connection.promise().query<T>(sql, values);
-  }
-
-  async function getConnection (): Promise<mysql.Connection> {
-    try {
-      if (!connection) {
-        connection = getConnectionOptions().then(database => {
-          const { prefix, ...options } = database;
-          console.log({ options });
-          const db = mysql.createConnection(options);
-          onIdle(() => db.end());
-          return db;
+let connection: SyncOrPromise<mysql.Connection> | null = null;
+let closeConnection = () => {};
+onIdle(() => closeConnection());
+function getConnection (): SyncOrPromise<mysql.Connection> {
+  try {
+    if (!connection) {
+      connection = getConnectionOptions().then(database => {
+        const { prefix, ...options } = database;
+        const db = mysql.createConnection(options);
+        // onIdle, close connection
+        closeConnection = () => db.end();
+        // on error, close connection
+        db.once('error', error => {
+          console.error(error);
+          connection = null;
+          db.end();
         });
-      }
-
-      if (connection instanceof Promise) return await connection;
-
-      return connection;
-    } catch (error) {
-      return Promise.reject(error);
+        connection = db;
+        return db;
+      });
     }
+
+    return connection;
+  } catch (error) {
+    return Promise.reject(error);
   }
-})();
+}
 
 export async function getConnectionOptions (): Promise<Database> {
   const configFile = path.join(config.server.root, 'wp-config.php');

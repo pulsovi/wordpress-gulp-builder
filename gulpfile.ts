@@ -25,6 +25,7 @@ import {
 } from './builder';
 
 export { init } from './builder/init';
+export { addPlugin } from './builder/addPlugin';
 
 Error.stackTraceLimit = Infinity;
 

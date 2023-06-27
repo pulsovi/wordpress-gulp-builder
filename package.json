@@ -1,8 +1,6 @@
 {
   "name": "wordpress-gulp-builder",
   "dependencies": {
-    "@types/fs-extra": "^11",
-    "@types/gulp": "patch:@types/gulp@npm%3A4.0.11#patches/@types/gulp.patch",
     "chalk": "^4",
     "chokidar": "^3.5.3",
     "duplexify": "^4.1.2",
@@ -12,6 +10,7 @@
     "gulp-markdown": "^6",
     "gulp-watch": "^5.0.1",
     "gulp-zip": "^5.1.0",
+    "inquirer": "^8",
     "mysql2": "^3.2.4",
     "pumpify": "^2.0.1",
     "streamfilter": "^3.0.0",
@@ -24,5 +23,10 @@
   "repository": "https://github.com/pulsovi/wordpress-gulp-builder.git",
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPLv3+",
-  "packageManager": "yarn@3.6.0"
+  "packageManager": "yarn@3.6.0",
+  "devDependencies": {
+    "@types/fs-extra": "^11",
+    "@types/gulp": "patch:@types/gulp@npm%3A4.0.11#patches/@types/gulp.patch",
+    "@types/inquirer": "^9.0.3"
+  }
 }

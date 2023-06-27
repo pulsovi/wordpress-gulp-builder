@@ -24,6 +24,8 @@ import {
   vinylFilter,
 } from './builder';
 
+export { init } from './builder/init';
+
 Error.stackTraceLimit = Infinity;
 
 const { src, dest, series, parallel, task } = gulp;

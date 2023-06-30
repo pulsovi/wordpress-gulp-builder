@@ -5,4 +5,5 @@ export * from './log';
 export * from './onIdle';
 export * from './pipelineFollowError';
 export * from './todo';
+export * from './unlinkDest';
 export * from './vinylFilter';

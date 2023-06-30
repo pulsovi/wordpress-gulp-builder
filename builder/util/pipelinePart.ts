@@ -7,6 +7,9 @@ import { stop } from './todo';
  * Get a list of streams, pipe each to the following one and return new Stream
  * wich can be used as input / output of the pipeline
  */
+export function pipelinePart (input: Stream.Readable, ...streams: NodeJS.ReadWriteStream[]): Stream.Duplex;
+export function pipelinePart (input: Stream.Readable, ...streams: Stream.Duplex[]): Stream.Duplex;
+export function pipelinePart (input: Stream.Duplex, ...streams: Stream.Duplex[]): Stream.Duplex;
 export function pipelinePart (input: Stream.Duplex, ...streams: Stream.Duplex[]): Stream.Duplex {
   if (!streams.length) return input;
 

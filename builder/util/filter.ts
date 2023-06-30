@@ -7,9 +7,9 @@ import type Vinyl from 'vinyl';
  * @param paradigm A callback function which take a data Vinyl and return
  *   boolean or Promise<boolean> indicate if this Vinyl must be KEPT.
  */
-export function filter (paradigm: (data: Vinyl) => boolean) {
+export function filter (paradigm: (data: Vinyl) => boolean, options = {}) {
   return new StreamFilter(
-    async (data: Vinyl, _encoding, cb) => cb(await paradigm(data)),
-    { objectMode: true, restore: true, passthrough: true }
+    async (data: Vinyl, _encoding, cb) => cb(!(await paradigm(data))),
+    { objectMode: true, restore: true, passthrough: true, ...options }
   );
 }

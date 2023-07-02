@@ -36,7 +36,7 @@ function pluginCopyOnlineCompiledFiles () {
 /** Watch for simple files which not need any compilation and copy them to the server */
 function pluginWatchSimpleFiles () {
   const fileTypes = ['css', 'js', 'php', 'pot'].map(ext => `**/*.${ext}`);
-  return watch(fileTypes, { cwd: 'src/plugins/', ignoreInitial: false })
+  return watch(fileTypes, { base: 'src', cwd: 'src/plugins/', ignoreInitial: false })
     .pipe(filter(data => !data.relative.match(/([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))
     .pipe(log())
     .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
@@ -47,7 +47,7 @@ function pluginWatchSimpleFiles () {
 async function pluginWatchOnlineCompiledFiles (pluginName) {
   return watch(
     ['**/*.mo', '**/*.po'],
-    {cwd: `${config.server.root}/wp-content/plugins/`, ignoreInitial: true }
+    { base: `${config.server.root}/wp-content`, cwd: `${config.server.root}/wp-content/plugins/`, ignoreInitial: true }
   )
     .pipe(dest('.', { cwd: 'src' }))
     .pipe(log());
@@ -59,7 +59,7 @@ async function pluginWatchCompiledFiles () {
     .filter(dirent => dirent.isDirectory())
     .map(dirent => `${dirent.name}/${dirent.name}.php`);
 
-  return watch([...plugins, '**/*.md'], { cwd: 'src/plugins', ignoreInitial: false })
+  return watch([...plugins, '**/*.md'], { base: 'src', cwd: 'src/plugins', ignoreInitial: false })
     .pipe(pluginProcessDoc())
     .pipe(pluginProcessCode())
     .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))

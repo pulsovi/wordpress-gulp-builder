@@ -32,7 +32,7 @@ export function snippetHotUpdate () {
 
         // snippet not installed on the server
         if (!snippetId) {
-          console.info('snippet with title', snippetTitle ?? snippetName, 'not found on the server, no hot update available');
+          console.info('snippet with title', chalk.blue(snippetTitle ?? snippetName), 'not found on the server, no hot update available');
           return cb();
         }
 

@@ -3,6 +3,9 @@
 	[
 		{
 			"path": "."
+		},
+		{
+			"path": "../wp_snippet_server"
 		}
 	]
 }

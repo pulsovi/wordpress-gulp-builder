@@ -19,7 +19,7 @@ export function snippetBuild () {
       try {
         const snippetName = snippetGetName(data.path);
         const code = await snippetGetCode(snippetName, false);
-        const version = await snippetGetVersion({ code });
+        const version = await snippetGetVersion({ code, isRequired: true });
         const doc = await snippetGetDoc(snippetName).pipe(streamToString());
         const json = snippetBuildJSON({ code, doc, version, vinyl: data });
         cb(null, json);

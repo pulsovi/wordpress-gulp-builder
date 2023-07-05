@@ -1,26 +1,72 @@
 import { fs } from '../util/fs';
 
-import { snippetGetFile } from './getFile';
+import { snippetGetFiles } from './getFile';
+
+type SyncOrPromise<T> = T | Promise<T>;
+export type SnippetGetVersionOptions = {
+  /**
+   * return can be a Promise, if true `name` is required
+   * @default false
+   */
+  async?: boolean;
+
+  /**
+   * return is required (cannot be null)
+   * @default false
+   */
+  isRequired?: boolean;
+} & ({
+
+  /** snippet directory name, the snippet slug name */
+  name: string;
+} | {
+
+  /** the code of the snippet */
+  code: string;
+} | {
+
+  /** version of the snippet, if present, it will be returned as is */
+  version: string;
+});
 
 /** Get the snippet version from snippet code */
-export async function snippetGetVersion (options: { name: string } | { code: string }): Promise<string> {
-  if (!(options as any).name && !(options as any).code) {
-    console.log('snippetGetVersion invalid parameters', options);
-    throw new Error('snippetGetVersion invalid parameters');
-  }
+export function snippetGetVersion (options: SnippetGetVersionOptions & { isRequired: true }): SyncOrPromise<string>;
+export function snippetGetVersion (options: SnippetGetVersionOptions & { async?: false }): string | null;
+export function snippetGetVersion (options: SnippetGetVersionOptions): SyncOrPromise<string | null>;
+export function snippetGetVersion (options: SnippetGetVersionOptions): SyncOrPromise<string | null> {
+  const syncValue = (
+    getFromVersion(options) ??
+    getFromCode(options)
+  );
+
+  if (syncValue) return syncValue;
+  if (options.async && 'name' in options) return getAsync(options);
+  if (!options.isRequired) return null;
+  throw new Error(`Cannot get snippet version with these options : ${JSON.stringify(options)}`);
+}
+
+function getFromVersion (options: SnippetGetVersionOptions): string | null {
+  if ('version' in options && options.version) return options.version;
+  return null;
+}
+
+function getFromCode (options: SnippetGetVersionOptions): string | null {
+  if (!('code' in options) || !options.code) return null;
+  const code = options.code;
   const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
+  const match = code.match(versionRE);
+  if (match?.groups?.version) return match.groups.version;
+  return null;
+}
 
+async function getAsync (options: SnippetGetVersionOptions & { name: string }): Promise<string | null> {
+  const files = snippetGetFiles(options.name);
   let code = '';
-  if ('code' in options) code = options.code;
-  else {
-    const file = snippetGetFile(options.name);
-    code = await fs.readFile(file, 'utf8');
+  for (const file of files) {
+    const content = await fs.readFile(file, 'utf8').catch(() => '');
+    if (!content) continue;
+    code = content;
+    break;
   }
-
-  if ('string' === typeof code) {
-    const match = code.match(versionRE);
-    if (match?.groups?.version) return match.groups.version;
-  }
-
-  throw new Error(`Unable to find version from this snippet ${JSON.stringify(options)}`);
+  return getFromCode({ ...options, code, async: false });
 }

@@ -5,30 +5,41 @@ import { snippetGetDocFile, snippetGetFile } from './getFile';
 
 type SyncOrPromise<T> = T | Promise<T>;
 
-interface GetTitleOptions {
+export type SnippetGetTitleOptions = {
   /**
    * return can be a Promise, if true `name` is required
    * @default false
    */
   async?: boolean;
 
-  /** snippet name */
-  name?: string;
-
   /**
    * return is required (cannot be null)
    * @default false
    */
   isRequired?: boolean;
-  code?: string;
-  html?: string;
-  markdown?: string;
-}
+} & ({
+  /** snippet directory name, the snippet slug name */
+  name: string;
+} | {
+  /** title of the snippet, if present, it will be returned as is */
+  title: string;
+} | {
+  /** the code of the snippet */
+  code: string;
+} | {
+  html: string;
+} | {
+  markdown: string;
+});
 
 /** retrieve snippet title from its code, html, or dirname */
-export function snippetGetTitle (options: GetTitleOptions): SyncOrPromise<string | null>;
-export function snippetGetTitle (options: GetTitleOptions): SyncOrPromise<string | null> {
+export function snippetGetTitle (options: SnippetGetTitleOptions & { async?: false; isRequired: true }): string;
+export function snippetGetTitle (options: SnippetGetTitleOptions & { async?: false }): string | null;
+export function snippetGetTitle (options: SnippetGetTitleOptions & { isRequired: true }): SyncOrPromise<string>;
+export function snippetGetTitle (options: SnippetGetTitleOptions): SyncOrPromise<string | null>;
+export function snippetGetTitle (options: SnippetGetTitleOptions): SyncOrPromise<string | null> {
   const syncValue = (
+    getFromTitle(options) ??
     getFromCode(options) ??
     getFromHtml(options) ??
     getFromMd(options)
@@ -51,8 +62,13 @@ export function snippetGetTitle (options: GetTitleOptions): SyncOrPromise<string
   throw new Error(`Cannot get title for this snippet : ${JSON.stringify(options)}`);
 }
 
-function getFromCode (options: GetTitleOptions): string | null {
-  if (!options.code) return null;
+function getFromTitle (options: SnippetGetTitleOptions): string | null {
+  if ('title' in options && options.title) return options.title;
+  return null;
+}
+
+function getFromCode (options: SnippetGetTitleOptions): string | null {
+  if (!('code' in options) || !options.code) return null;
   return (
     options.code
     .match(/^ \* (?:Snippet|Plugin) Name: (?<snippetName>.*)$/mu)
@@ -60,8 +76,8 @@ function getFromCode (options: GetTitleOptions): string | null {
   );
 }
 
-function getFromHtml (options: GetTitleOptions): string | null {
-  if (!options.html) return null;
+function getFromHtml (options: SnippetGetTitleOptions): string | null {
+  if (!('html' in options) || !options.html) return null;
   return (
     options.html
     .match(/<h1[^>]*>(?<title>.*?)<\/h1>/u)
@@ -69,8 +85,8 @@ function getFromHtml (options: GetTitleOptions): string | null {
   );
 }
 
-function getFromMd (options: GetTitleOptions): string | null {
-  if (!options.markdown) return null;
+function getFromMd (options: SnippetGetTitleOptions): string | null {
+  if (!('markdown' in options) || !options.markdown) return null;
   return (
     options.markdown
     .match(/^# (?<title>.*)\n/u)
@@ -78,7 +94,7 @@ function getFromMd (options: GetTitleOptions): string | null {
   );
 }
 
-async function getAsyncFromCode (options: GetTitleOptions & { name: string }): Promise<string> {
+async function getAsyncFromCode (options: SnippetGetTitleOptions & { name: string }): Promise<string> {
   let codeFile = snippetGetFile(options.name);
   if (!await fs.exists(codeFile)) codeFile = snippetGetFile(options.name, 'html');
   const code = await fs.readFile(codeFile, 'utf8');
@@ -87,7 +103,7 @@ async function getAsyncFromCode (options: GetTitleOptions & { name: string }): P
   throw new Error('Cannot get title from this code');
 }
 
-async function getAsyncFromMd (options: GetTitleOptions & { name: string }): Promise<string> {
+async function getAsyncFromMd (options: SnippetGetTitleOptions & { name: string }): Promise<string> {
   const mdFile = snippetGetDocFile(options.name);
   const markdown = await fs.readFile(mdFile, 'utf8');
   const title = getFromMd({ markdown });

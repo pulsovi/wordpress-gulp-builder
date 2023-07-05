@@ -10,6 +10,7 @@ import { snippetGetCode } from './getCode';
 import { snippetGetTitle } from './getTitle';
 import { snippetGetVersion } from './getVersion';
 import { snippetGetDoc } from './getDoc';
+import { snippetPublishVersion } from './publishVersion';
 
 /** Get snippet names and build them */
 export function snippetBuild () {
@@ -47,8 +48,10 @@ function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions
   const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
   const scope = snippetGetScope(code);
 
+  const title = snippetGetTitle({ code, html: doc, isRequired: true });
+
   const snippet = {
-    name: snippetGetTitle({ code, html: doc, isRequired: true }),
+    name: title,
     scope,
     code: codeFiltered,
     desc: doc,
@@ -62,7 +65,9 @@ function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions
 
   const jsonString = JSON.stringify(data, null, 2).replace(/\//gu, '\\/');
   vinyl.contents = Buffer.from(jsonString, 'utf8');
-  vinyl.path += '/' + vinyl.basename + '_' + version + '.code-snippets.json'
+  vinyl.path += '/' + vinyl.basename + '_' + version + '.code-snippets.json';
+
+  snippetPublishVersion({ title, version });
   return vinyl;
 }
 

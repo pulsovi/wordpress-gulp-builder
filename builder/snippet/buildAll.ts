@@ -12,5 +12,8 @@ export function snippetBuildAll () {
   return src('./src/snippets/*', { base: 'src' })
     .pipe(snippetBuild())
     .pipe(dest('./build'))
-    .pipe(log(data => `${chalk.blue(path.basename(data.history[0]))} SNIPPET successfully built`));
+    .pipe(log(data => {
+      const title = JSON.parse(data.contents!.toString()).snippets[0].name;
+      return `${chalk.blue(title)} SNIPPET successfully built`
+    }));
 }

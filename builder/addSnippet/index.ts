@@ -8,7 +8,11 @@ export async function addSnippet (cb) {
   const snippetDescription = await prompt('snippet description :');
   const snippetVersion = await prompt('snippet version :');
   const snippetAuthor = await prompt('snippet author :');
-  const snippetScope = await prompt("Scope: Optionel, par défaut vaut 'global', autres choix possibles : 'content' pour un snippet ajouté via shortcode, 'front-end' pour un snippet désactivé en back-office, ...");
+  const snippetScope = await prompt(`Scope: Optionel, par défaut vaut 'global', autres choix possibles :
+    - 'content' pour un snippet ajouté via shortcode,
+    - 'front-end' pour un snippet désactivé en back-office,
+    - 'single-use' pour un snippet à usage unique
+    - ...`);
   const snippetClassName = pascalify(snippetTitle);
   const snippetSlug = kebabify(snippetTitle);
   const snippetName = snippetSlug;

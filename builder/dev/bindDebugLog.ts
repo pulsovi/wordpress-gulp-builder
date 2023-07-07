@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { dest } from 'gulp';
 import watch from 'gulp-watch';
 import pumpify from 'pumpify';
@@ -15,7 +16,7 @@ export function bindDebugLog () {
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
   const loader = watch('debug.log', { cwd })
     .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
-    .pipe(log('Error: ', data => (data.contents!.toString().split('\n').shift() ?? '') + '\nsee debug.log file'))
+    .pipe(log('Error: ', data => chalk.red(data.contents!.toString().split('\n').shift() ?? '') + '\nsee debug.log file'))
     .pipe(dest('.'));
 
   const cleaner = watch('src/**/*')

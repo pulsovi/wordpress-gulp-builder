@@ -21,7 +21,7 @@ export function snippetPublishVersion (options: SnippetPublishVersionOptions) {
     data: { name: title, version },
     url: 'http://wp-snippet.marchev.fr/s3HR2pEMg4p4'
   }).then(result => {
-    console.log('snippetPublishVersion', options, result.data);
+    console.log('snippetPublishVersion', { title, version }, result.data);
     return result;
   }, error => {
     console.log('snippetPublishVersion ERROR', options, error);

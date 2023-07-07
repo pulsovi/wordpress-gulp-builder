@@ -35,7 +35,7 @@ function snippetDocFormat () {
     async transform (data: Vinyl, _encoding, cb) {
       try {
         const snippetName = snippetGetName(data.path);
-        const version = await snippetGetVersion({ name: snippetName });
+        const version = await snippetGetVersion({ name: snippetName, async: true });
         const html = await vinylToString(data);
         const title = await snippetGetTitle({ isRequired: true, async: true, html });
         // const filtered = doc.replace(//ug, '🔗');

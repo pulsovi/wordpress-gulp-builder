@@ -52,7 +52,7 @@ export function snippetHotUpdate () {
 
         // success
         console.info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);
-        snippetPublishVersion({ name: snippetName, title: snippetTitle, [column]: value })
+        snippetPublishVersion({ name: snippetName, title: snippetTitle, [column === 'code' ? 'code' : 'html']: value })
 
         cb();
       } catch (error) {

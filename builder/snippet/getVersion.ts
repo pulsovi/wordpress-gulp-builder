@@ -21,6 +21,10 @@ export type SnippetGetVersionOptions = {
   name: string;
 } | {
 
+  /** the html documentation of the snippet */
+  html: string;
+} | {
+
   /** the code of the snippet */
   code: string;
 } | {
@@ -36,7 +40,8 @@ export function snippetGetVersion (options: SnippetGetVersionOptions): SyncOrPro
 export function snippetGetVersion (options: SnippetGetVersionOptions): SyncOrPromise<string | null> {
   const syncValue = (
     getFromVersion(options) ??
-    getFromCode(options)
+    getFromCode(options) ??
+    getFromHtml(options)
   );
 
   if (syncValue) return syncValue;
@@ -55,6 +60,15 @@ function getFromCode (options: SnippetGetVersionOptions): string | null {
   const code = options.code;
   const versionRE = /^ \* Version:\s*(?<version>\S*)$/um;
   const match = code.match(versionRE);
+  if (match?.groups?.version) return match.groups.version;
+  return null;
+}
+
+function getFromHtml (options: SnippetGetVersionOptions): string | null {
+  if (!('html' in options) || !options.html) return null;
+  const html = options.html;
+  const versionRE = />Version (?<version>[\d\.]*) </u;
+  const match = html.match(versionRE);
   if (match?.groups?.version) return match.groups.version;
   return null;
 }

@@ -175,6 +175,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^20.4.1":
+  version: 20.4.1
+  resolution: "@types/node@npm:20.4.1"
+  checksum: 22cbcc792f2eb636fe4188778ed0f32658ab872aa7fcb9847b3fa289a42b14b9f5e30c6faec50ef3c7adbc6c2a246926e5858136bb8b10c035a3fcaa6afbeed2
+  languageName: node
+  linkType: hard
+
 "@types/picomatch@npm:*":
   version: 2.3.0
   resolution: "@types/picomatch@npm:2.3.0"
@@ -5201,6 +5208,7 @@ __metadata:
     "@types/fs-extra": ^11
     "@types/gulp": ^4.0.13
     "@types/inquirer": ^9.0.3
+    "@types/node": ^20.4.1
     axios: ^1.4.0
     chalk: ^4
     chokidar: ^3.5.3

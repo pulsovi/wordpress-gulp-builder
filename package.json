@@ -1,6 +1,7 @@
 {
   "name": "wordpress-gulp-builder",
   "dependencies": {
+    "@types/node": "^20.4.1",
     "axios": "^1.4.0",
     "chalk": "^4",
     "chokidar": "^3.5.3",

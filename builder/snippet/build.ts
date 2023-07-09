@@ -87,5 +87,5 @@ function snippetGetScope (code: string): Scope {
 }
 
 function isScope (value?: string): value is Scope {
-  return ['global', 'content', 'front-end'].includes(value!);
+  return ['global', 'content', 'front-end', 'single-use'].includes(value!);
 }

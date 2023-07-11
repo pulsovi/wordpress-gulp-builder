@@ -1,10 +1,11 @@
 import { parallel, series } from 'gulp';
 
-import { watchBuilderChange } from './watchBuilderChange';
-import { pluginsCleanServerFiles } from './pluginsCleanServerFiles';
-import { pluginsSyncFiles } from './pluginsSyncFiles';
-import { snippetsSync } from './snippetsSync';
+import { pluginsCleanServerFiles } from '../plugin/cleanServerFiles';
+import { pluginsSyncFiles } from '../plugin/syncFiles';
+import { snippetsSync } from '../snippet/sync';
+
 import { bindDebugLog } from './bindDebugLog';
+import { watchBuilderChange } from './watchBuilderChange';
 
 const pluginDev = series(
   pluginsCleanServerFiles,

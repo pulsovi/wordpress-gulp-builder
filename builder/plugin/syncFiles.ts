@@ -2,14 +2,15 @@ import { dest, src, parallel } from 'gulp';
 import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
 
-import { pluginProcessCode } from '../plugin/processCode';
-import { pluginProcessDoc } from '../plugin/processDoc';
 import { config } from '../util/config';
 import { filter } from '../util/filter';
 import { fs } from '../util/fs';
 import { log, logMove } from '../util/log';
 import { pipelinePart } from '../util/pipelinePart';
 import { unlinkDest } from '../util/unlinkDest';
+
+import { pluginProcessCode } from './processCode';
+import { pluginProcessDoc } from './processDoc';
 
 /** Synchronize plugin files with the server */
 export const pluginsSyncFiles = parallel(
@@ -35,9 +36,9 @@ function pluginCopyOnlineCompiledFiles () {
 
 /** Watch for simple files which not need any compilation and copy them to the server */
 function pluginWatchSimpleFiles () {
-  const fileTypes = ['css', 'js', 'php', 'pot'].map(ext => `**/*.${ext}`);
+  const fileTypes = ['css', 'js', 'php', 'pot', 'svg'].map(ext => `**/*.${ext}`);
   return watch(fileTypes, { base: 'src', cwd: 'src/plugins/', ignoreInitial: false })
-    .pipe(filter(data => !data.relative.match(/([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))
+    .pipe(filter(data => !data.relative.match(/^plugins(?:\/|\\)([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))
     .pipe(log())
     .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))

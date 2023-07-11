@@ -1,5 +1,6 @@
 import Stream from 'stream';
 
+import fancyLog from 'fancy-log';
 import type Vinyl from 'vinyl';
 
 export function log (prefix?: string, transformer?: (data: Vinyl) => string): Stream.Transform;
@@ -32,4 +33,8 @@ export function logMove (prefix?: string) {
       cb(null, data);
     },
   });
+}
+
+export function info (...msg) {
+  fancyLog.info(...msg);
 }

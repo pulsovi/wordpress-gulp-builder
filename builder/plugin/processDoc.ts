@@ -1,7 +1,9 @@
 import markdown from 'gulp-markdown';
+import rename from 'gulp-rename';
 import StreamFilter from 'streamfilter'
 import type Vinyl from 'vinyl';
 
+import { bridge } from '../util/bridge';
 import { github } from '../util/github';
 import { pipelinePart } from '../util/pipelinePart';
 
@@ -14,7 +16,10 @@ export function pluginProcessDoc () {
   return pipelinePart(
     markdownFilter,
     markdown({ gfm: true }),
-    github(),
+    bridge(pipelinePart(
+      github(),
+      rename(path => { path.basename += '-full' }),
+    ), { clone: true, contents: false }),
     markdownFilter.restore,
   );
 }

@@ -1,4 +1,4 @@
-import { dest, src, parallel } from 'gulp';
+import { dest, series, src, parallel } from 'gulp';
 import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
 
@@ -13,11 +13,13 @@ import { pluginProcessCode } from './processCode';
 import { pluginProcessDoc } from './processDoc';
 
 /** Synchronize plugin files with the server */
-export const pluginsSyncFiles = parallel(
-  pluginWatchSimpleFiles,
+export const pluginsSyncFiles = series(
   pluginCopyOnlineCompiledFiles,
-  pluginWatchOnlineCompiledFiles,
-  pluginWatchCompiledFiles,
+  parallel(
+    pluginWatchSimpleFiles,
+    pluginWatchOnlineCompiledFiles,
+    pluginWatchCompiledFiles,
+  ),
 );
 
 /** List online compiled files and copy them on the server */

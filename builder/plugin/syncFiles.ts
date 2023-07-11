@@ -50,13 +50,35 @@ function pluginWatchSimpleFiles () {
 
 /** Watch for online compiled files and copy them here */
 async function pluginWatchOnlineCompiledFiles (pluginName) {
-  return watch(
-    ['**/*.mo', '**/*.po'],
-    { base: `${config.server.root}/wp-content`, cwd: `${config.server.root}/wp-content/plugins/`, ignoreInitial: true }
-  )
+  const watcher = watch([], {
+    base: `${config.server.root}/wp-content`,
+    cwd: `${config.server.root}/wp-content/plugins/`,
+    ignoreInitial: true
+  });
+
+  watch('src/plugins/*/', {
+    depth: 1,
+    events: ['addDir', 'unlinkDir'],
+    ignoreInitial: false,
+    ignorePermissionErrors: true,
+    read: false,
+    verbose: true,
+  })
+    .on('unlinkDir', dirname => { watcher.unwatch(compiledFilesOf(dirname)); })
+    .on('addDir', dirname => { watcher.add(compiledFilesOf(dirname)); });
+
+  return watcher
     .pipe(dest('.', { cwd: 'src' }))
+    .pipe(logMove())
     .pipe(log());
 }
+
+  function compiledFilesOf (pluginName: string): string[] {
+    return [
+      `${pluginName}/**/*.mo`,
+      `${pluginName}/**/*.po`,
+    ];
+  }
 
 /** Watch for compiled files, compile and copy them to the server */
 async function pluginWatchCompiledFiles () {

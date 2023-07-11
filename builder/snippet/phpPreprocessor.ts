@@ -12,7 +12,7 @@ const commandRE = [
   /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
   /('|")<<<(?<command>php_string) (?<arguments>[^>]*)>>>\1/u,
 
-  /* ↓ this line MUST be the last ↓ */
+  /* ↓ this line MUST be the last item of the array ↓ */
   /<<<(?<command>php_string) (?<arguments>[^>]*)>>>/u,
 ]
 

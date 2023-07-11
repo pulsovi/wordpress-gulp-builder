@@ -1,10 +1,3 @@
-import Stream from 'stream';
+import { passthrough } from '../util/passthrough';
 
-export function pluginProcessCode () {
-  return new Stream.Transform({
-    objectMode: true,
-    transform (data, _encoding, cb) {
-      cb(null, data);
-    },
-  });
-}
+export const pluginProcessCode = passthrough();

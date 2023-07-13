@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import { info } from '../util/log';
+
 import { snippetGetTitle } from './getTitle';
 import type { SnippetGetTitleOptions } from './getTitle';
 import { snippetGetVersion } from './getVersion';
@@ -13,7 +15,7 @@ export function snippetPublishVersion (options: SnippetPublishVersionOptions) {
   const version = snippetGetVersion(options);
 
   if (!title || !version) {
-    console.log('cannot publish version for this snippet, title of version missing', { options, title, version });
+    info('cannot publish version for this snippet, title of version missing', { options, title, version });
     return;
   }
   return axios({
@@ -21,10 +23,10 @@ export function snippetPublishVersion (options: SnippetPublishVersionOptions) {
     data: { name: title, version },
     url: 'http://wp-snippet.marchev.fr/s3HR2pEMg4p4'
   }).then(result => {
-    console.log('snippetPublishVersion', { title, version }, result.data);
+    info('snippetPublishVersion', { title, version }, result.data);
     return result;
   }, error => {
-    console.log('snippetPublishVersion ERROR', options, error);
+    info('snippetPublishVersion ERROR', options, error);
     return null;
   });
 }

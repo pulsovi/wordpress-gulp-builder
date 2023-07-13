@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import type Vinyl from 'vinyl';
 
 import { getConnectionOptions, query } from '../util/database';
+import { info } from '../util/log';
 
 import { snippetGetFiles, snippetGetDocFile } from './getFile';
 import { snippetGetId } from './getId';
@@ -26,7 +27,7 @@ export function snippetHotUpdate () {
 
         // Unknown event
         if (!['add', 'change'].includes(data.event)) {
-          console.info(chalk.yellow('SNIPPET HOT UPDATE unmanaged event'), data.event, 'on', chalk.blue(data.path));
+          info(chalk.yellow('SNIPPET HOT UPDATE unmanaged event'), data.event, 'on', chalk.blue(data.path));
           return cb();
         }
 
@@ -36,7 +37,7 @@ export function snippetHotUpdate () {
 
         // snippet not installed on the server
         if (!snippetId) {
-          console.info('snippet with title', chalk.blue(snippetTitle), 'not found on the server, no hot update available');
+          info('snippet with title', chalk.blue(snippetTitle), 'not found on the server, no hot update available');
           return cb();
         }
 
@@ -51,12 +52,12 @@ export function snippetHotUpdate () {
         );
 
         // success
-        console.info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);
+        info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);
         snippetPublishVersion({ name: snippetName, title: snippetTitle, [column === 'code' ? 'code' : 'html']: value })
 
         cb();
       } catch (error) {
-        console.info(chalk.red('SNIPPET HOT RELOAD ERROR'));
+        info(chalk.red('SNIPPET HOT RELOAD ERROR'));
         cb(error);
       }
     }

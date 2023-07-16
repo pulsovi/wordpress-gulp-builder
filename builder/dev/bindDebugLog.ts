@@ -14,9 +14,13 @@ export function bindDebugLog () {
   const cwd = `${config.server.root}/wp-content`;
   fs.ensureFile('./debug.log').catch(console.error);
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
-  const loader = watch('debug.log', { cwd })
+  const loader = watch('debug.log', { cwd, ignorePermissionErrors: true })
     .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
-    .pipe(log('Error: ', data => chalk.red(data.contents!.toString().split('\n').shift() ?? '') + '\nsee debug.log file'))
+    .pipe(log('Error:', data => {
+      const lines = data.contents!.toString().split('\n') || [''];
+      const message = lines[0].length < 100 ? lines.join('\\n').slice(0, 100) : lines[0];
+      return chalk.red(message) + ' see debug.log file';
+    }))
     .pipe(dest('.'));
 
   const cleaner = watch('src/**/*')

@@ -1,3 +1,5 @@
+import path from 'path';
+
 import chalk from 'chalk';
 import { dest, series, src, parallel } from 'gulp';
 import watch from 'gulp-watch';
@@ -31,10 +33,13 @@ function pluginCopyOnlineCompiledFiles () {
    * ils sont compilés sur le serveur et sont renvoyés ici par `pluginWatchOnlineCompiledFiles`
    * si on les suivait avec watch, on aurait une boucle infinie
    */
-  return src(['./**/*.po', '**/*.mo'], { base: 'src', cwd: 'src/plugins/' })
+  return src(
+    ['./*/languages/*.po', '*/languages/*.mo', '*/languages/*.json'],
+    { base: 'src', cwd: 'src/plugins/' }
+  )
     .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))
-    .pipe(log());
+    .pipe(log('copy'));
 }
 
 /** Watch for simple files which not need any compilation and copy them to the server */
@@ -59,6 +64,7 @@ async function pluginWatchOnlineCompiledFiles (pluginName) {
     ignoreInitial: true,
     ignorePermissionErrors: true,
   });
+  const choki = watcher.unwatch([]);
 
   watch('src/plugins/*/', {
     depth: 1,
@@ -69,19 +75,17 @@ async function pluginWatchOnlineCompiledFiles (pluginName) {
     verbose: true,
   })
     .on('unlinkDir', dirname => { watcher.unwatch(compiledFilesOf(dirname)); })
-    .on('addDir', dirname => { watcher.add(compiledFilesOf(dirname)); });
+    .on('addDir', dirname => { watcher.add(compiledFilesOf(dirname)); })
 
   return watcher
+    .pipe(log((data: Vinyl) => `${data.event} online ${chalk.magenta(data.relative)}`))
     .pipe(dest('.', { cwd: 'src' }))
-    .pipe(logMove())
-    .pipe(log());
+  ;
 }
 
-  function compiledFilesOf (pluginName: string): string[] {
-    return [
-      `${pluginName}/**/*.mo`,
-      `${pluginName}/**/*.po`,
-    ];
+  function compiledFilesOf (pluginDirName: string): string[] {
+    const pluginName = path.basename(pluginDirName);
+    return ['mo', 'po', 'json'].map(ext => `${pluginName}/languages/*.${ext}`);
   }
 
 /** Watch for compiled files, compile and copy them to the server */

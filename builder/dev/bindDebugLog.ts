@@ -23,7 +23,7 @@ export function bindDebugLog () {
     }))
     .pipe(dest('.'));
 
-  const cleaner = watch('src/**/*')
+  const cleaner = watch('src/**/*', { ignorePermissionErrors: true })
     .pipe(doAction(async (data: Vinyl) => {
       if (!(await fs.stat(`${cwd}/debug.log`)).size) return;
       if (data.event === 'change') await fs.truncate(`${cwd}/debug.log`);

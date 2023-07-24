@@ -7,7 +7,7 @@ import type Vinyl from 'vinyl';
 import { config } from '../util/config';
 import { doAction } from '../util/doAction';
 import { fs } from '../util/fs';
-import { log } from '../util/log';
+import { info, log } from '../util/log';
 import { vinylFilter } from '../util/vinylFilter';
 
 export function bindDebugLog () {
@@ -23,11 +23,13 @@ export function bindDebugLog () {
     }))
     .pipe(dest('.'));
 
-  const cleaner = watch('src/**/*', { ignorePermissionErrors: true })
+  const cleaner = watch('src', { ignorePermissionErrors: true })
     .pipe(doAction(async (data: Vinyl) => {
+      if (data.event !== 'change') return;
       if (!(await fs.stat(`${cwd}/debug.log`)).size) return;
-      if (data.event === 'change') await fs.truncate(`${cwd}/debug.log`);
+      info(`${data.event} ${chalk.magenta(data.relative)}, truncate debug.log`);
+      await fs.truncate(`${cwd}/debug.log`);
     }));
 
-  return pumpify.obj([loader, cleaner]);
+  return cleaner;
 }

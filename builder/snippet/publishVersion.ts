@@ -9,16 +9,22 @@ import type { SnippetGetVersionOptions } from './getVersion';
 
 type SnippetPublishVersionOptions = SnippetGetTitleOptions & SnippetGetVersionOptions;
 
+const versions: Record<string, string> = {};
+
 /** publish given version as last version of given snippet */
-export function snippetPublishVersion (options: SnippetPublishVersionOptions) {
-  const title = snippetGetTitle(options);
-  const version = snippetGetVersion(options);
+export async function snippetPublishVersion (options: SnippetPublishVersionOptions) {
+  const title = await snippetGetTitle(options);
+  const version = await snippetGetVersion(options);
 
   if (!title || !version) {
-    info('cannot publish version for this snippet, title of version missing', { options, title, version });
+    info('cannot publish version for this snippet, title or version missing', { options, title, version });
     return;
   }
-  return axios({
+
+  if (versions[title] === version) return;
+  versions[title] = version;
+
+  return await axios({
     method: 'POST',
     data: { name: title, version },
     url: 'http://wp-snippet.marchev.fr/s3HR2pEMg4p4'

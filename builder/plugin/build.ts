@@ -17,7 +17,7 @@ export function pluginBuild () {
     objectMode: true,
     async write (data: Vinyl, _encoding, cb) {
       const pluginName = data.basename;
-      const version = await pluginGetVersion({ name: pluginName });
+      const version = await pluginGetVersion({ async: true, name: pluginName, isRequired: true });
       const displayName = `pluginBuild_${pluginName}`;
       const task = Object.assign(() => pluginBuildTask(pluginName, version), { displayName });
       series(task)(cb);

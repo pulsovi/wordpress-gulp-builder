@@ -32,6 +32,6 @@ function pluginBuildTask (pluginName, version) {
     pluginProcessDoc(),
     zip(zipFile),
     dest('build/plugins'),
-    log(data => `${chalk.blue(pluginName)} PLUGIN successfully built`)
+    log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`)
   );
 }

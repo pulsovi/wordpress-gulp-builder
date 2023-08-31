@@ -66,6 +66,7 @@ function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions
   const jsonString = JSON.stringify(data, null, 2).replace(/\//gu, '\\/');
   vinyl.contents = Buffer.from(jsonString, 'utf8');
   vinyl.path += '/' + vinyl.basename + '_' + version + '.code-snippets.json';
+  vinyl.version = version;
 
   snippetPublishVersion({ title, version });
   return vinyl;

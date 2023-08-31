@@ -14,6 +14,6 @@ export function snippetBuildAll () {
     .pipe(dest('./build'))
     .pipe(log(data => {
       const title = JSON.parse(data.contents!.toString()).snippets[0].name;
-      return `${chalk.blue(title)} SNIPPET successfully built`
+      return `${chalk.blue(title)} v${chalk.yellow(data.version)} SNIPPET successfully built`
     }));
 }

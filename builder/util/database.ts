@@ -24,14 +24,13 @@ function getConnection (): SyncOrPromise<mysql.Connection> {
     if (!connection) {
       connection = getConnectionOptions().then(database => {
         const { prefix, ...options } = database;
-        const db = mysql.createConnection(options);
+        const db = mysql.createConnection({ ...options, /* debug: true */});
         // onIdle, close connection
         closeConnection = () => db.end();
         // on error, close connection
-        db.once('error', error => {
-          console.error(error);
-          connection = null;
-          db.end();
+        db.on('error', error => {
+          console.error('connection Error catched', error);
+          db.connect();
         });
         connection = db;
         return db;

@@ -7,9 +7,11 @@ import type Vinyl from 'vinyl';
 
 import { log } from '../util/log';
 import { pipelineFollowError } from '../util/pipelineFollowError';
+import { doAction } from '../util/doAction';
 
 import { pluginGetVersion } from './getVersion';
 import { pluginProcessDoc } from './processDoc';
+import { pluginPublishVersion } from './publishVersion';
 
 /** Get plugin names and build them */
 export function pluginBuild () {
@@ -32,6 +34,7 @@ function pluginBuildTask (pluginName, version) {
     pluginProcessDoc(),
     zip(zipFile),
     dest('build/plugins'),
-    log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`)
+    log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`),
+    doAction(async () => { await pluginPublishVersion({ title: pluginName, version }); }),
   );
 }

@@ -39,12 +39,12 @@ export function pipelinePart (input: Stream.Duplex, ...streams: Stream.Duplex[])
   });
 
   let current: Stream = input;
-  for (const stream of streams) {
+  streams.forEach((stream, id) => {
     if (typeof stream.write !== 'function') stop();
     current.pipe(stream);
     current.on('error', error => { stream.emit('error', error); });
     current = stream;
-  }
+  });
   current.pipe(output);
 
   face.end = (...args) => {

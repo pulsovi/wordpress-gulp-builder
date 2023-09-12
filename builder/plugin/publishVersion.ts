@@ -32,7 +32,7 @@ export async function pluginPublishVersion (options: PluginPublishVersionOptions
     info('pluginPublishVersion', { title, version }, result.data);
     return result;
   }, error => {
-    info('pluginPublishVersion ERROR', options, error);
+    info('pluginPublishVersion ERROR', options, error.message);
     return null;
   });
 }

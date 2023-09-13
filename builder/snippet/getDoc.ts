@@ -5,9 +5,15 @@ import { src } from 'gulp';
 import { snippetGetDocFile } from './getFile';
 import { snippetProcessDoc } from './processDoc';
 
+import { pipelineFollowError } from '../util/pipelineFollowError';
+import { streamToString } from '../util/streamToString';
+
 /** Get the HTML doc of a snippet as a stream */
-export function snippetGetDoc (snippetName: string, isRequired = false): Stream.Duplex {
+export async function snippetGetDoc (snippetName: string, isRequired = false): Promise<string> {
   const docFile = snippetGetDocFile(snippetName);
-  return src(docFile, { allowEmpty: !isRequired })
-    .pipe(snippetProcessDoc());
+  return await pipelineFollowError(
+    src(docFile, { allowEmpty: !isRequired }),
+    snippetProcessDoc(),
+    streamToString()
+  );
 }

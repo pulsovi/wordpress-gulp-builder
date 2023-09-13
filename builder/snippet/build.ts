@@ -5,11 +5,12 @@ import type Vinyl from 'vinyl';
 
 import { streamToString } from '../util/streamToString';
 
-import { snippetGetName } from './getName';
 import { snippetGetCode } from './getCode';
+import { snippetGetDoc } from './getDoc';
+import { snippetGetName } from './getName';
+import { snippetGetScope } from './getScope';
 import { snippetGetTitle } from './getTitle';
 import { snippetGetVersion } from './getVersion';
-import { snippetGetDoc } from './getDoc';
 import { snippetPublishVersion } from './publishVersion';
 
 /** Get snippet names and build them */
@@ -21,7 +22,7 @@ export function snippetBuild () {
         const snippetName = snippetGetName(data.path);
         const code = await snippetGetCode(snippetName, false);
         const version = await snippetGetVersion({ code, isRequired: true });
-        const doc = await snippetGetDoc(snippetName).pipe(streamToString());
+        const doc = await snippetGetDoc(snippetName);
         const json = snippetBuildJSON({ code, doc, version, vinyl: data });
         cb(null, json);
       } catch (error) {
@@ -46,7 +47,7 @@ function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions
   const dateFormated = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
   const codeFiltered = code.replace(/^<\?php\n?/u, '\n');
-  const scope = snippetGetScope(code);
+  const scope = snippetGetScope({ code, isRequired: true });
 
   const title = snippetGetTitle({ code, html: doc, isRequired: true });
 
@@ -70,23 +71,4 @@ function snippetBuildJSON({ code, doc, version, vinyl }: SnippetBuildJsonOptions
 
   snippetPublishVersion({ title, version });
   return vinyl;
-}
-
-/**
- * Scope of the snippet :
- * - global is normal php snippet
- * - content is html injectable as shortcode
- * - front-end is php snippet which is disabled on admin back-office
- */
-type Scope = 'global' | 'content' | 'front-end';
-function snippetGetScope (code: string): Scope {
-  const match = code.match(/^ \* Scope: (?<scope>.*)$/mu);
-  if (!match) return 'global';
-  const result = match.groups?.scope;
-  if (!isScope(result)) throw new Error(`Unknown scope: ${result}`);
-  return result;
-}
-
-function isScope (value?: string): value is Scope {
-  return ['global', 'content', 'front-end', 'single-use'].includes(value!);
 }

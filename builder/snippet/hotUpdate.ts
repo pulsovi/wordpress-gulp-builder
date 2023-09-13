@@ -6,9 +6,12 @@ import type Vinyl from 'vinyl';
 import { getConnectionOptions, query } from '../util/database';
 import { info } from '../util/log';
 
+import { snippetGetCode } from './getCode';
+import { snippetGetDoc } from './getDoc';
 import { snippetGetFiles, snippetGetDocFile } from './getFile';
 import { snippetGetId } from './getId';
 import { snippetGetName } from './getName';
+import { snippetGetScope } from './getScope';
 import { snippetGetTitle } from './getTitle';
 import { snippetPublishVersion } from './publishVersion';
 
@@ -35,21 +38,32 @@ export function snippetHotUpdate () {
         const snippetTitle = await snippetGetTitle({ name: snippetName, async: true }) ?? snippetName;
         const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
 
-        // snippet not installed on the server
-        if (!snippetId) {
-          info('snippet with title', chalk.blue(snippetTitle), 'not found on the server, no hot update available');
-          return cb();
-        }
-
         // perform query
         const db = await getConnectionOptions();
         const column = data.stem === snippetName ? 'code' : 'description';
         const value = data.contents!.toString();
 
-        await query(
-          `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
-          [value, snippetId]
-        );
+        if (snippetId) {
+          // snippet found, update it
+          await query(
+            `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
+            [value, snippetId]
+          );
+        } else {
+          // snippet not installed on the server, install it
+          info('snippet with title', chalk.blue(snippetTitle), 'not found on the server, installing it ...');
+          const code = (column === 'code') ? value : await snippetGetCode(snippetName, false);
+          const description = (column === 'description') ? value : await snippetGetDoc(snippetName);
+          const scope = snippetGetScope({ code });
+          await query(
+            `INSERT INTO \`${db.prefix}snippets\`
+              (name, code, description, scope, tags)
+            VALUES
+              (?, ?, ?, ?, ?)
+            `,
+            [snippetTitle, code, description, scope, '']
+          )
+        }
 
         // success
         info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);

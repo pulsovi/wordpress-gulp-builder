@@ -32,7 +32,7 @@ export async function snippetPublishVersion (options: SnippetPublishVersionOptio
     info('snippetPublishVersion', { title, version }, result.data);
     return result;
   }, error => {
-    info('snippetPublishVersion ERROR', options, error);
+    info('snippetPublishVersion ERROR', options, error.message);
     return null;
   });
 }

@@ -2,30 +2,22 @@
 
 ## Installation
 
-for contributors
-
-```shell
-project_name="wp_<mon-projet>" # Modifier cette ligne
-cd "C:\dev\_WP_Plugins"
-mkdir "$project_name"
-cd "$project_name"
-git init
-git submodule add git@github.com:pulsovi/wordpress-gulp-builder.git builder
-ln builder/gulpfile.ts .
-ln builder/tsconfig.json .
-cp builder/.gulpconfig.json.dist .gulpconfig.json
-yarn add -D gulp wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
 ```
-
-### After git update
-
-`yarn up wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git`
+# [Gulp does not work with PnP · Issue #6516 · yarnpkg/yarn](https://github.com/yarnpkg/yarn/issues/6516)
+echo 'nodeLinker: node-modules' >> .yarnrc.yml
+yarn set version stable
+yarn add wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
+```
 
 ## Usage
 
 ### build
 
-`yarn gulp build` will build all plugins and snippets to the `build/` folder
+`yarn build` will build all plugins and snippets to the `build/` folder
+
+### dev
+
+`yarn start` will compile all files which need compilation and follow (watch and copy) them to the target local server configured in `.gulpconfig.json`.
 
 #### plugins
 
@@ -33,8 +25,13 @@ Each plugin need to have a `.php` file with the same name of its directory name.
 All files in the plugin directory is copied as is to the `.zip` archive, except of thoses files which are compiled :
 
 - `*.md`: markdown files are compiled in-place to HTML format. Two `.html` files are generated :
-    + `<original name>.html` contains the same contents of the origina markdown file compiled to HTML.
-    + `<original name>-full.html` wrapes the contents of `<original name>.html` with HTML document, head and body. Adding to it GitHub styles and a title : the stem of the markdown file.
+    + `<original name>.html` :  
+        contains the same contents of the origina markdown file compiled to HTML.
+    + `<original name>-full.html` :  
+        - Wrape the contents of `<original name>.html` with HTML5 document structure, head and body.
+        - Add GitHub styles and a title : the stem of the markdown file.
+        - Add `<base target="_blank" />` balise.
+        - Add a script which put the value of the GET query parameter `base` as the `<base>` `href` value.
 
 #### snippets
 
@@ -42,8 +39,8 @@ Each snippet is compiled to a `*.code-snippets.json` file which can be imported 
 
 Two files are compiled for each snippet :
 
-- code file : the `.php` file which have the same name of the snippet directory. This file is compiled following the [API > Snippets](#preprocessor) instructions.
-- documentation file : the `README.md` file. This file is compiled as HTML code, wrapped by a `<details>` HTML bloc and used for documentation field of the snippet.
+- **code file :** the `.php` file which have the same name as the snippet directory. This file is compiled following the [API > Snippets](#preprocessor) instructions.
+- **documentation file :** the `README.md` file. This file is compiled as HTML code, wrapped by a `<details>` HTML bloc and used as `documentation` field of the snippet.
 
 ## API
 
@@ -60,8 +57,8 @@ Header Examples :
 ```php
 <?php
 /**
- * Snippet Name: <Titre du snippet>
- * Description: <Description du snippet>
+ * Snippet Name: <Title of the snippet>
+ * Description: <Description of the snippet>
  * Version: 1.0.0
  * Scope: front-end
  * Author: David GABISON <david.gabison@outlook.com>
@@ -71,8 +68,8 @@ Header Examples :
 ```html
 <!--
 /**
- * Snippet Name: <Titre du snippet>
- * Description: <Description du snippet>
+ * Snippet Name: <Title of the snippet>
+ * Description: <Description of the snippet>
  * Version: 1.0.0
  * Scope: content
  * Author: David GABISON <david.gabison@outlook.com>
@@ -103,3 +100,24 @@ Available commands are
 |-------|----|-----------|
 |`include_raw`|**`filename`** string|Add the raw content of the filename in place of the preprocessor command|
 |`php_string`|**`filename`** string|Convert the content of the file to a PHP string, escaping the specials chars and add it (wrapped by `'`) in place of the preprocessor command|
+
+## Contribution
+
+### Installation
+
+```shell
+project_name="wp_<mon-projet>" # Modifier cette ligne
+cd "C:\dev\_WP_Plugins"
+mkdir "$project_name"
+cd "$project_name"
+git init
+git submodule add git@github.com:pulsovi/wordpress-gulp-builder.git builder
+ln builder/gulpfile.ts .
+ln builder/tsconfig.json .
+cp builder/.gulpconfig.json.dist .gulpconfig.json
+yarn add -D gulp wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
+```
+
+### After git update
+
+`yarn up wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git`

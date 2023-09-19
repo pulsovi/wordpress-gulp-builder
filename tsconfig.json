@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "exactOptionalPropertyTypes": true,
     "moduleResolution": "node",
+    "outDir": "./dist",
     "noImplicitAny": false,
     "strictNullChecks": true
   },

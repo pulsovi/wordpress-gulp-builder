@@ -2102,7 +2102,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gulp-cli@npm:^2.2.0":
+"gulp-cli@npm:^2.2.0, gulp-cli@npm:^2.3.0":
   version: 2.3.0
   resolution: "gulp-cli@npm:2.3.0"
   dependencies:
@@ -2160,6 +2160,13 @@ __metadata:
     gulp:
       optional: true
   checksum: e1647507b8f6f8aee3f6b72d1465b8842e37108b8f3943f0aece7f8c5f6c87f2ed6ba8b56a1fb75c0cfb3fedb06584c3ef5bd5089601723aed0fd362ab923f7a
+  languageName: node
+  linkType: hard
+
+"gulp-rename@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "gulp-rename@npm:2.0.0"
+  checksum: b9add0d130487dee6067206eebfc3867e4e254117edef154e8c270e3111b112335439ac1cac1519d6a32541343e04bd299484253a333b4e34c7d430039953e99
   languageName: node
   linkType: hard
 
@@ -5215,8 +5222,10 @@ __metadata:
     duplexify: ^4.1.2
     fs-extra: ^11.1.1
     gulp: ^4.0.2
+    gulp-cli: ^2.3.0
     gulp-filter: ^7.0.0
     gulp-markdown: ^6
+    gulp-rename: ^2.0.0
     gulp-watch: ^5.0.1
     gulp-zip: ^5.1.0
     inquirer: ^8
@@ -5226,6 +5235,8 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^5.1.3
     vinyl: ^3.0.0
+  bin:
+    start: bin/start
   languageName: unknown
   linkType: soft
 

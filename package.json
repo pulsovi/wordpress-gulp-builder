@@ -1,10 +1,12 @@
 {
   "name": "wordpress-gulp-builder",
   "bin": {
+    "build": "bin/build",
     "start": "bin/start"
   },
   "scripts": {
-    "postinstall": "tsc && cp builder/util/github-model.html dist/builder/util"
+    "compile": "tsc && cp builder/util/github-model.html dist/builder/util",
+    "prepack": "tsc && cp builder/util/github-model.html dist/builder/util"
   },
   "dependencies": {
     "@types/node": "^20.4.1",

@@ -2,25 +2,29 @@ import path from 'path';
 import Stream from 'stream';
 
 import chalk from 'chalk';
-import type Vinyl from 'vinyl';
-
 import fs from 'fs-extra';
+import Vinyl from 'vinyl';
 
-const commands: Record<string, ((match: RegExpMatchArray, data: Vinyl) => Promise<string>)> = {};
+import { error, info } from 'fancy-log';
+
+type CommandMatch = RegExpMatchArray & { groups: { command: string; arguments: string; }};
+type Context = Record<string, unknown>;
+const commands: Record<string, ((match: CommandMatch, data: Vinyl, context: Context) => Promise<string>)> = {};
 const commandRE = [
   /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
   /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
   /('|")<<<(?<command>php_string) (?<arguments>[^>]*)>>>\1/u,
+  /^# ?(?<command>[a-z_]*)(?: (?<arguments>.*))?$/mu,
 
   /* ↓ this line MUST be the last item of the array ↓ */
   /<<<(?<command>php_string) (?<arguments>[^>]*)>>>/u,
 ]
 
 /** return match of `content` against preprocess regexps */
-function getMatch (content: string): RegExpMatchArray | null {
+function getMatch (content: string): CommandMatch | null {
   for (const regexp of commandRE) {
     const match = content.match(regexp);
-    if (match) return match;
+    if (match) return match as CommandMatch;
   }
   return null;
 }
@@ -45,18 +49,22 @@ export function snippetPhpPreprocessor () {
 }
 snippetPhpPreprocessor.func = _snippetPhpPreprocessor;
 
-async function _snippetPhpPreprocessor (data: Vinyl): Promise<void> {
+async function _snippetPhpPreprocessor (
+  data: Vinyl, context: Context = {}
+): Promise<void> {
   let content = data.contents!.toString();
   let match = getMatch(content);
 
   while (match) {
     const { command } = match.groups!;
 
+    let replacement = '';
     if (command in commands) {
-      const replacement = await commands[command](match, data);
-      while (content.includes(match[0])) content = content.replace(match[0], replacement);
+      replacement = await commands[command](match, data, context);
+    } else {
+      error(chalk.red(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}`));
     }
-    else throw new Error(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}`);
+    while (content.includes(match[0])) content = content.replace(match[0], replacement);
 
     match = getMatch(content);
   }
@@ -64,15 +72,42 @@ async function _snippetPhpPreprocessor (data: Vinyl): Promise<void> {
   data.contents = Buffer.from(content);
 }
 
-async function includeRaw (match: RegExpMatchArray, data: Vinyl): Promise<string> {
-  const target = path.resolve(path.dirname(data.path), match.groups!.arguments);
-  return await fs.readFile(target, 'utf8');
-}
-commands.include_raw = includeRaw;
+commands.include_raw = async function includeRaw (match, data): Promise<string> {
+  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+  const content = await fs.readFile(target, 'utf8');
+  return content;
+};
 
-async function phpString (match: RegExpMatchArray, data: Vinyl): Promise<string> {
-  const content = await includeRaw(match, data);
+commands.php_string = async function phpString (match, data): Promise<string> {
+  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+  const content = await fs.readFile(target, 'utf8');
   const phpString = `'${content.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
   return phpString;
-}
-commands.php_string = phpString;
+};
+
+commands.include_once = async function includeOnce (match, data, context): Promise<string> {
+  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+  const included = context.includeOnce = context.includeOnce as string[] ?? [];
+  if (included.includes(target)) {
+    // console.log({match: match.groups, file: data.path, context, target});
+    return '';
+  }
+  included.push(target);
+  const stat = await fs.stat(target).catch(err => ({ error: err }));
+  if ('error' in stat) {
+    error(chalk.red(`Unable to include_once. ${stat.error}`));
+    error('context:', data.path);
+    // console.log({match: match.groups, file: data.path, context, target});
+    return '';
+  }
+  const includeFile = new Vinyl({
+    cwd: data.cwd,
+    contents: (await fs.readFile(target)).slice('<?php'.length),
+    stat,
+    base: data.base,
+    path: target,
+  });
+  await _snippetPhpPreprocessor(includeFile, context);
+  // console.log({match: match.groups, file: data.path, context, target}, includeFile.contents.toString());
+  return includeFile.contents.toString();
+};

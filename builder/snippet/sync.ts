@@ -11,6 +11,6 @@ export function snippetsSync (cb: TaskFunctionCallback) {
   return watch(`src/snippets/*/*`, { ignoreInitial: false })
     .pipe(log())
     .pipe(snippetProcessDoc())
-    .pipe(snippetProcessCode())
+    .pipe(snippetProcessCode({ follow: true }))
     .pipe(snippetHotUpdate());
 }

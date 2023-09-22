@@ -1,14 +1,22 @@
+import { exec } from 'child_process';
 import path from 'path';
 import Stream from 'stream';
 
 import chalk from 'chalk';
+import chokidar from 'chokidar';
 import fs from 'fs-extra';
 import Vinyl from 'vinyl';
 
 import { error, info } from 'fancy-log';
 
 type CommandMatch = RegExpMatchArray & { groups: { command: string; arguments: string; }};
-type Context = Record<string, unknown>;
+export type Context = Record<string, unknown> & {
+  /**
+   * If true, enable watching on file dependencies
+   * @default false
+   */
+  follow?: boolean;
+};
 const commands: Record<string, ((match: CommandMatch, data: Vinyl, context: Context) => Promise<string>)> = {};
 const commandRE = [
   /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
@@ -32,13 +40,16 @@ function getMatch (content: string): CommandMatch | null {
 /**
  * Return a stream which consumes snippet PHP files and preprocess
  * all the `/*<<<command ...>>>*​/` strings
+ *
+ * @param context A context options for the preprocessor.
+ * @param {boolean} context.follow If true, enable watching on file dependencies
  */
-export function snippetPhpPreprocessor () {
+export function snippetPhpPreprocessor (context: Context = {}) {
   return new Stream.Transform({
     objectMode: true,
     async transform (data: Vinyl, _encoding, cb) {
       try {
-        await _snippetPhpPreprocessor(data)
+        await _snippetPhpPreprocessor(data, context)
         cb(null, data);
       } catch (error) {
         console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);
@@ -49,9 +60,7 @@ export function snippetPhpPreprocessor () {
 }
 snippetPhpPreprocessor.func = _snippetPhpPreprocessor;
 
-async function _snippetPhpPreprocessor (
-  data: Vinyl, context: Context = {}
-): Promise<void> {
+async function _snippetPhpPreprocessor (data: Vinyl, context: Context): Promise<void> {
   let content = data.contents!.toString();
   let match = getMatch(content);
 
@@ -72,16 +81,18 @@ async function _snippetPhpPreprocessor (
   data.contents = Buffer.from(content);
 }
 
-commands.include_raw = async function includeRaw (match, data): Promise<string> {
+commands.include_raw = async function includeRaw (match, data, context): Promise<string> {
   const target = path.resolve(path.dirname(data.path), match.groups.arguments);
   const content = await fs.readFile(target, 'utf8');
+  if (context.follow) setDependency(data.path, target, data.base);
   return content;
 };
 
-commands.php_string = async function phpString (match, data): Promise<string> {
+commands.php_string = async function phpString (match, data, context): Promise<string> {
   const target = path.resolve(path.dirname(data.path), match.groups.arguments);
   const content = await fs.readFile(target, 'utf8');
   const phpString = `'${content.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
+  if (context.follow) setDependency(data.path, target, data.base);
   return phpString;
 };
 
@@ -108,6 +119,25 @@ commands.include_once = async function includeOnce (match, data, context): Promi
     path: target,
   });
   await _snippetPhpPreprocessor(includeFile, context);
+  if (context.follow) setDependency(data.path, target, data.base);
   // console.log({match: match.groups, file: data.path, context, target}, includeFile.contents.toString());
   return includeFile.contents.toString();
 };
+
+/** Auto reload parent when dependency change */
+function setDependency (parent: string, dependency: string, base = ''): void {
+  const offset = base ? base.length + 1 : 0;
+  const watcher = chokidar.watch(dependency, {
+    persistent: true,
+    ignoreInitial: true,
+    disableGlobbing: true,
+  }).on('all', event => {
+    info(
+      'phpPreprocessor dependency\n ',
+      event, chalk.magenta(dependency.slice(offset)),
+      '\n  reload', chalk.magenta(parent.slice(offset))
+    );
+    watcher.close();
+    exec(`touch "${parent}"`, (err) => { err && error(err); });
+  });
+}

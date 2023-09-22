@@ -92,14 +92,16 @@ Allowed preprocessor commands syntaxes :
 - `<!--<<<command arg1 arg2 ...>>>-->`
 - `'<<<command arg1 arg2 ...>>>'`
 - `"<<<command arg1 arg2 ...>>>"`
+- `# command arg1 arg2 ...` must be alone on his line.
 - `<<<command arg1 arg2 ...>>>`
 
 Available commands are 
 
 |Command|Args|Description|
 |-------|----|-----------|
-|`include_raw`|**`filename`** string|Add the raw content of the filename in place of the preprocessor command|
-|`php_string`|**`filename`** string|Convert the content of the file to a PHP string, escaping the specials chars and add it (wrapped by `'`) in place of the preprocessor command|
+|`include_raw`|**`filename`** string|Include the raw content of the filename.|
+|`php_string`|**`filename`** string|Include the content of the file as a single-quote PHP string, escaping the specials chars.|
+|`include_once`|**`filename`** string|Include php file content if it's not already included|
 
 ## Contribution
 

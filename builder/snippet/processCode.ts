@@ -8,9 +8,10 @@ import { pipelinePart } from '../util/pipelinePart';
 import { snippetGetFile } from './getFile';
 import { snippetGetName } from './getName';
 import { snippetPhpPreprocessor } from './phpPreprocessor';
+import type { Context } from './phpPreprocessor';
 
 /** Return a Stream.Transform which process snippet code file */
-export function snippetProcessCode (): Stream.Duplex {
+export function snippetProcessCode (context?: Context): Stream.Duplex {
   const filter = new StreamFilter(
     (data: Vinyl, _encoding, cb) => {
       const snippetName = snippetGetName(data.path);
@@ -23,7 +24,7 @@ export function snippetProcessCode (): Stream.Duplex {
 
   return pipelinePart(
     filter,
-    snippetPhpPreprocessor(),
+    snippetPhpPreprocessor(context),
     snippetCodePhpToSnippet(),
     filter.restore
   );

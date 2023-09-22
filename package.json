@@ -31,7 +31,7 @@
     "vinyl": "^3.0.0"
   },
   "version": "1.0.0",
-  "description": "A comprehensive tool that assst the development and compilation of a wordpress project",
+  "description": "A comprehensive tool that assist the development and compilation of a wordpress project",
   "repository": "https://github.com/pulsovi/wordpress-gulp-builder.git",
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPL-3.0-or-later",

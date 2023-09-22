@@ -9,7 +9,7 @@ import { snippetBuild } from './build';
 
 /** List snippets and build each of them */
 export function snippetBuildAll () {
-  return src('./src/snippets/*', { base: 'src' })
+  return src('./src/snippets/*/', { base: 'src' })
     .pipe(snippetBuild())
     .pipe(dest('./build'))
     .pipe(log(data => {

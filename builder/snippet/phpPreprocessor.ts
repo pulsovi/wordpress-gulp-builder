@@ -49,7 +49,7 @@ export function snippetPhpPreprocessor (context: Context = {}) {
     objectMode: true,
     async transform (data: Vinyl, _encoding, cb) {
       try {
-        await _snippetPhpPreprocessor(data, context)
+        await _snippetPhpPreprocessor(data, { ...context })
         cb(null, data);
       } catch (error) {
         console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);

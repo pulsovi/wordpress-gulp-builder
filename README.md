@@ -3,25 +3,29 @@
 ## Installation
 
 ```
-# [Gulp does not work with PnP · Issue #6516 · yarnpkg/yarn](https://github.com/yarnpkg/yarn/issues/6516)
-echo 'nodeLinker: node-modules' >> .yarnrc.yml
 yarn set version stable
-yarn add wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
+# [Gulp does not work with PnP · Issue #6516 · yarnpkg/yarn](https://github.com/yarnpkg/yarn/issues/6516)
+yarn config set nodeLinker node-modules
+yarn add -D wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
+yarn wpbuilder init
 ```
 
 ## Usage
 
 ### build
 
-`yarn build` will build all plugins and snippets to the `build/` folder
+`yarn wpbuilder build` will build all plugins and snippets to the `build/` folder
 
 ### dev
 
-`yarn start` will compile all files which need compilation and follow (watch and copy) them to the target local server configured in `.gulpconfig.json`.
+`yarn wpbuilder dev` will compile all files which need compilation and follow (watch and copy) them to the target local server configured in `.wpbuilderrc.json`.
 
 #### plugins
 
 Each plugin need to have a `.php` file with the same name of its directory name.
+
+`yarn wpbuilder addPlugin` will add these files
+
 All files in the plugin directory is copied as is to the `.zip` archive, except of thoses files which are compiled :
 
 - `*.md`: markdown files are compiled in-place to HTML format. Two `.html` files are generated :
@@ -34,6 +38,8 @@ All files in the plugin directory is copied as is to the `.zip` archive, except 
         - Add a script which put the value of the GET query parameter `base` as the `<base>` `href` value.
 
 #### snippets
+
+`yarn wpbuilder addSnippet`
 
 Each snippet is compiled to a `*.code-snippets.json` file which can be imported by the [Code Snippet](https://wordpress.org/plugins/code-snippets/) plugin.
 
@@ -105,7 +111,7 @@ Available commands are
 
 ## Contribution
 
-### Installation
+### Installation for contributors
 
 ```shell
 project_name="wp_<mon-projet>" # Modifier cette ligne
@@ -116,7 +122,7 @@ git init
 git submodule add git@github.com:pulsovi/wordpress-gulp-builder.git builder
 ln builder/gulpfile.ts .
 ln builder/tsconfig.json .
-cp builder/.gulpconfig.json.dist .gulpconfig.json
+cp builder/.wpbuilderrc.json.dist .wpbuilderrc.json
 yarn add -D gulp wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.git
 ```
 

@@ -38,5 +38,5 @@ function addGitignore (line: string, title: string): void {
     else lines.push(title, line, '');
   }
   else lines.push(line, '');
-  fs.writeFileSync(lines.join('\n'), 'utf8');
+  fs.writeFileSync('.gitignore', lines.join('\n'), 'utf8');
 }

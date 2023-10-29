@@ -10,8 +10,8 @@ export const init = parallel(
 async function createTree (cb) {
   await Promise.all([
     fs.ensureDir('src'),
-    fs.ensureDir('vendor'),
   ]);
+  cb();
 }
 
 function setGitignore (cb) {
@@ -22,6 +22,7 @@ function setGitignore (cb) {
   addGitignore('/build', '# generated files');
   addGitignore('/tsconfig.json', '# generated files');
   addGitignore('/gulpfile.ts', '# generated files');
+  cb();
 }
 
 function addGitignore (line: string, title: string): void {

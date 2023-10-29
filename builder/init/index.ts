@@ -16,7 +16,7 @@ async function createTree (cb) {
 
 function setGitignore (cb) {
   addGitignore('/vendor', '# local files');
-  addGitignore('/.gulpconfig.json', '# local files');
+  addGitignore('/.wpbuilderrc.json', '# local files');
   addGitignore('/.phpintel', '# tmp files');
   addGitignore('/debug.log', '# tmp files');
   addGitignore('/build', '# generated files');

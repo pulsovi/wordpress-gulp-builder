@@ -2,10 +2,9 @@ import path from 'path';
 
 import mysql from 'mysql2';
 
+import { config } from './config';
 import { fs } from './fs';
 import { onIdle } from './onIdle';
-
-const config: { server: { root: string; }} = JSON.parse(fs.readFileSync('.gulpconfig.json', 'utf8'));
 
 type SyncOrPromise<T> = T | Promise<T>;
 

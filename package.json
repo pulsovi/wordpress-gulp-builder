@@ -24,6 +24,7 @@
     "gulp-zip": "^5.1.0",
     "inquirer": "^8",
     "mysql2": "^3.2.4",
+    "prompt-sync": "^4.2.0",
     "pumpify": "^2.0.1",
     "streamfilter": "^3.0.0",
     "ts-node": "^10.9.1",

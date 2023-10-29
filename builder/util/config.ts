@@ -10,7 +10,8 @@ try {
     JSON.parse(fs.readFileSync('.wpbuilderrc.json', 'utf8'));
 } catch (error) {
   while (!initConfig) {
-    const wordpressFolder = require('prompt-sync')()('Please indicate the local folder which contains the WordPress installation');
+    let wordpressFolder = require('prompt-sync')()('Please indicate the local folder which contains the WordPress installation');
+    wordpressFolder = wordpressFolder.replace(/^('|")(.*)\1$/u, '$2');
     if (fs.existsSync(path.join(wordpressFolder, 'wp-config.php'))) {
       initConfig = { server: { root: path.resolve(wordpressFolder) }};
       fs.writeFileSync('.wpbuilderrc.json', JSON.stringify(initConfig, null, 2), 'utf8');

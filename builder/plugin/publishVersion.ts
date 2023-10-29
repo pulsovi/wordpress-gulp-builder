@@ -13,8 +13,8 @@ const versions: Record<string, string> = {};
 
 /** publish given version as last version of given plugin */
 export async function pluginPublishVersion (options: PluginPublishVersionOptions) {
-  const title = await pluginGetTitle(options);
-  const version = await pluginGetVersion(options);
+  const title = await pluginGetTitle({ ...options, async: true });
+  const version = await pluginGetVersion({ ...options, async: true });
 
   if (!title || !version) {
     info('cannot publish version for this plugin, title or version missing', { options, title, version });

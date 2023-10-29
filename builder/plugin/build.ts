@@ -35,6 +35,6 @@ function pluginBuildTask (pluginName, version) {
     zip(zipFile),
     dest('build/plugins'),
     log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`),
-    doAction(async () => { await pluginPublishVersion({ title: pluginName, version }); }),
+    doAction(async () => { await pluginPublishVersion({ name: pluginName, version }); }),
   );
 }

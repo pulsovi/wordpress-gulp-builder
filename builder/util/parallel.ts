@@ -60,7 +60,7 @@ export function parallel (
   });
 
   for (const stream of streams) {
-    stream.on('error', error => { stream.emit('error', error); });
+    stream.on('error', error => { face.emit('error', error); });
     stream.once('end', triggerEnd);
     stream.pipe(output);
   }

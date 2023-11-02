@@ -20,7 +20,11 @@ yarn wpbuilder init
 
 `yarn wpbuilder dev` will compile all files which need compilation and follow (watch and copy) them to the target local server configured in `.wpbuilderrc.json`.
 
-#### plugins
+### updatePot
+
+`yarn wpbuilder updatePot` will add references to your `*.tsx` files in the `*.pot` files of your plugins.
+
+### addPlugin
 
 Each plugin need to have a `.php` file with the same name of its directory name.
 

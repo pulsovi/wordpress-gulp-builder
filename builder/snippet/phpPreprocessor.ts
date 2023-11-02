@@ -4,10 +4,10 @@ import Stream from 'stream';
 
 import chalk from 'chalk';
 import chokidar from 'chokidar';
-import fs from 'fs-extra';
+import { error, info } from 'fancy-log';
 import Vinyl from 'vinyl';
 
-import { error, info } from 'fancy-log';
+import { fs } from '../util/fs';
 
 type CommandMatch = RegExpMatchArray & { groups: { command: string; arguments: string; }};
 export type Context = Record<string, unknown> & {

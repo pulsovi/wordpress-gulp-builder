@@ -89,11 +89,16 @@ commands.include_raw = async function includeRaw (match, data, context): Promise
 };
 
 commands.php_string = async function phpString (match, data, context): Promise<string> {
-  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
-  const content = await fs.readFile(target, 'utf8');
-  const phpString = `'${content.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
-  if (context.follow) setDependency(data.path, target, data.base);
-  return phpString;
+  try {
+    const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+    const content = await fs.readFile(target, 'utf8');
+    const phpString = `'${content.replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
+    if (context.follow) setDependency(data.path, target, data.base);
+    return phpString;
+  } catch (error) {
+    console.log(error);
+    return error.message;
+  }
 };
 
 commands.include_once = async function includeOnce (match, data, context): Promise<string> {

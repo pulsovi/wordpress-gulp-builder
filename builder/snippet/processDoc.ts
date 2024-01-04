@@ -39,7 +39,7 @@ function snippetDocFormat () {
         const html = await vinylToString(data);
         const title = await snippetGetTitle({ name: snippetName, isRequired: true, async: true, html });
         // const filtered = doc.replace(//ug, '🔗');
-        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version} <img src="http://wp-snippet.marchev.fr/check?name=${title}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;"></p><details style="display: inline-block; margin-left:1em;"><summary><h1>Documentation</h1></summary>${html}</details></div>`);
+        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version} <img src="http://wp-snippet.marchev.fr/check?name=${title}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;"></p><details style="display: inline-block; margin-left:1em;"><summary><h1 style="display: inline-block;">Documentation</h1></summary>${html}</details></div>`);
         cb(null, data);
       } catch (error) {
         stop();

@@ -15,8 +15,11 @@ const scopes = [
   /** php snippet which is disabled on admin back-office */
   'front-end',
 
+  /** php snippet whic is enabled only on admin back-office */
+  'admin',
+
   /** php snippet which is fired once you click on a "play" button in snippets list page */
-  'single-use'
+  'single-use',
 ] as const;
 type Scope = (typeof scopes)[number];
 

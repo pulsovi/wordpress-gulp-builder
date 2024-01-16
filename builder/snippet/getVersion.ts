@@ -15,6 +15,10 @@ export type SnippetGetVersionOptions = {
    * @default false
    */
   isRequired?: boolean;
+  name?: string | null | undefined;
+  html?: string | null | undefined;
+  code?: string | null | undefined;
+  version?: string | null | undefined;
 } & ({
 
   /** snippet directory name, the snippet slug name */
@@ -45,8 +49,9 @@ export function snippetGetVersion (options: SnippetGetVersionOptions): SyncOrPro
   );
 
   if (syncValue) return syncValue;
-  if (options.async && 'name' in options) return getAsync(options);
-  if (!options.isRequired) return null;
+  const { async, name, isRequired } = options;
+  if (async && name) return getAsync({ ...options, name });
+  if (!isRequired) return null;
   throw new Error(`Cannot get snippet version with these options : ${JSON.stringify(options)}`);
 }
 

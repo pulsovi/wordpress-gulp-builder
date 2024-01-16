@@ -6,13 +6,9 @@ import type Vinyl from 'vinyl';
 import { getConnectionOptions, query } from '../util/database';
 import { info } from '../util/log';
 
-import { snippetGetCode } from './getCode';
-import { snippetGetDoc } from './getDoc';
-import { snippetGetFiles, snippetGetDocFile } from './getFile';
-import { snippetGetId } from './getId';
+import { snippetGetAll } from './getAll';
+import { snippetGetDocFile, snippetGetFiles } from './getFile';
 import { snippetGetName } from './getName';
-import { snippetGetScope } from './getScope';
-import { snippetGetTitle } from './getTitle';
 import { snippetPublishVersion } from './publishVersion';
 
 export function snippetHotUpdate () {
@@ -20,13 +16,17 @@ export function snippetHotUpdate () {
     objectMode: true,
     async write (data: Vinyl, _encoding, cb) {
       try {
+        const name = snippetGetName(data.path);
+
         // Verify data is one of code or doc files
-        const snippetName = snippetGetName(data.path);
         const snippetFiles = [
-          ...snippetGetFiles(snippetName),
-          snippetGetDocFile(snippetName).replace(/.md$/u, '.html'),
+          ...snippetGetFiles(name),
+          snippetGetDocFile(name).replace(/.md$/u, '.html'),
         ];
-        if (!snippetFiles.includes(data.path)) return cb();
+        if (!snippetFiles.includes(data.path)) {
+          info(chalk.yellow('SNIPPET HOT UPDATE unmanaged file'), data.path);
+          return cb();
+        }
 
         // Unknown event
         if (!['add', 'change'].includes(data.event)) {
@@ -34,40 +34,34 @@ export function snippetHotUpdate () {
           return cb();
         }
 
-        // Get snippet Title for logs and id for query
-        const snippetTitle = await snippetGetTitle({ name: snippetName, async: true }) ?? snippetName;
-        const snippetId = await snippetGetId(snippetName).catch<null>(error => null);
-
         // perform query
         const db = await getConnectionOptions();
-        const column = data.stem === snippetName ? 'code' : 'description';
-        const value = data.contents!.toString();
+        const { id, title, code, description, scope, tags, version } = await snippetGetAll(name);
 
-        if (snippetId) {
+        if (id) {
           // snippet found, update it
           await query(
-            `UPDATE \`${db.prefix}snippets\` SET \`${column}\` = ? WHERE \`id\` = ?`,
-            [value, snippetId]
+            `UPDATE ? SET
+              name = ?, code = ?, description = ?, scope = ?, tags = ?
+            WHERE id = ?`,
+            [`${db.prefix}snippets`, title, code, description, scope, tags, id]
           );
         } else {
           // snippet not installed on the server, install it
-          info('snippet with title', chalk.blue(snippetTitle), 'not found on the server, installing it ...');
-          const code = (column === 'code') ? value : await snippetGetCode(snippetName, false);
-          const description = (column === 'description') ? value : await snippetGetDoc(snippetName);
-          const scope = snippetGetScope({ code });
+          info('snippet with title', chalk.blue(title), 'not found on the server, installing it ...');
           await query(
-            `INSERT INTO \`${db.prefix}snippets\`
+            `INSERT INTO ?
               (name, code, description, scope, tags)
             VALUES
               (?, ?, ?, ?, ?)
             `,
-            [snippetTitle, code, description, scope, '']
+            [`${db.prefix}snippets`, title, code, description, scope, tags]
           )
         }
 
         // success
-        info(chalk.green('HOT UPDATED'), chalk.blue(snippetTitle), column);
-        snippetPublishVersion({ name: snippetName, title: snippetTitle, [column === 'code' ? 'code' : 'html']: value })
+        info(chalk.green('HOT UPDATED'), chalk.blue(title));
+        snippetPublishVersion({ name, title, version })
 
         cb();
       } catch (error) {

@@ -41,21 +41,21 @@ export function snippetHotUpdate () {
         if (id) {
           // snippet found, update it
           await query(
-            `UPDATE ? SET
+            `UPDATE \`${db.prefix}snippets\` SET
               name = ?, code = ?, description = ?, scope = ?, tags = ?
             WHERE id = ?`,
-            [`${db.prefix}snippets`, title, code, description, scope, tags, id]
+            [title, code, description, scope, tags, id]
           );
         } else {
           // snippet not installed on the server, install it
           info('snippet with title', chalk.blue(title), 'not found on the server, installing it ...');
           await query(
-            `INSERT INTO ?
+            `INSERT INTO \`${db.prefix}snippets\`
               (name, code, description, scope, tags)
             VALUES
               (?, ?, ?, ?, ?)
             `,
-            [`${db.prefix}snippets`, title, code, description, scope, tags]
+            [title, code, description, scope, tags]
           )
         }
 

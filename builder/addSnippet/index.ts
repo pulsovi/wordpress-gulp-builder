@@ -36,12 +36,23 @@ ${snippetScope ? ` * Scope: ${snippetScope}\n`: ''}\
  */
 class ${snippetClassName} {
   /**
+   * This class is not meant to be instantiated,
+   * it only provides static methods
+   *
+   * @since 1.0
+   * @access private
+   */
+  private function __construct () {
+    /* prevent external instantiation */
+  }
+
+  /**
    * initialize the snippet
    *
    * @since ${snippetVersion}
    * @access public
    */
-  static function init () {
+  public static function init () {
 
   }
 }

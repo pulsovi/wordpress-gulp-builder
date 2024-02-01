@@ -1,0 +1,18 @@
+diff --git a/index.js b/index.js
+index 31212f7dfe65c77a56fc0545c224aead23d328ae..7c62599b0ec196effa693d2531ea4297a1f0838d 100644
+--- a/index.js
++++ b/index.js
+@@ -127,9 +127,10 @@ function watch(globs, opts, cb) {
+ 
+ 		// Workaround for early read
+ 		setTimeout(function () {
+-			vinyl.read(filepath, fileOpts).then(function (file) {
+-				write(event, null, file);
+-			});
++			vinyl.read(filepath, fileOpts).then(
++				function (file) { write(event, null, file); },
++				function (error) { outputStream.emit('error', error); }
++			);
+ 		}, opts.readDelay);
+ 	}
+ 

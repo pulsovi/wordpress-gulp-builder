@@ -7,10 +7,10 @@
     "exactOptionalPropertyTypes": true,
     "moduleResolution": "node",
     "noImplicitAny": false,
-    "outDir": "./dist",
-    "target": "es2020",
+    "outDir": "dist",
     "skipLibCheck": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "target": "ES2020"
   },
   "include": ["gulpfile.ts", "builder/**/*.ts"]
 }

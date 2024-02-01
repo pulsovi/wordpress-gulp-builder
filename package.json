@@ -43,5 +43,6 @@
   },
   "resolutions": {
     "gulp-watch@^5.0.1": "patch:gulp-watch@npm%3A5.0.1#./.yarn/patches/gulp-watch-npm-5.0.1-ab7de3c490.patch"
-  }
+  },
+  "type": "module"
 }

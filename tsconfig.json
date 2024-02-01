@@ -8,6 +8,8 @@
     "moduleResolution": "node",
     "noImplicitAny": false,
     "outDir": "./dist",
+    "target": "es2020",
+    "skipLibCheck": true,
     "strictNullChecks": true
   },
   "include": ["gulpfile.ts", "builder/**/*.ts"]

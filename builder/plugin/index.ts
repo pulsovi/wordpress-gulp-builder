@@ -1,1 +1,1 @@
-export * from './buildAll';
+export * from './buildAll.js';

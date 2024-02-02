@@ -1,8 +1,8 @@
 Error.stackTraceLimit = Infinity;
 
-export { addPlugin } from './builder/addPlugin';
-export { addSnippet } from './builder/addSnippet';
-export { build } from './builder/build';
-export { dev } from './builder/dev';
-export { init } from './builder/init';
-export { updatePot } from './builder/updatePot';
+export { addPlugin } from './builder/addPlugin/index.js';
+export { addSnippet } from './builder/addSnippet/index.js';
+export { build } from './builder/build/index.js';
+export { dev } from './builder/dev/index.js';
+export { init } from './builder/init/index.js';
+export { updatePot } from './builder/updatePot/index.js';

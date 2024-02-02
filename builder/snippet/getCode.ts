@@ -1,11 +1,11 @@
-import { src } from 'gulp';
+import gulp from 'gulp'; const { src } = gulp;
 
-import { fs } from '../util/fs';
-import { pipelineFollowError } from '../util/pipelineFollowError';
-import { streamToString } from '../util/streamToString';
+import { fs } from '../util/fs.js';
+import { pipelineFollowError } from '../util/pipelineFollowError.js';
+import { streamToString } from '../util/streamToString.js';
 
-import { snippetProcessCode } from './processCode';
-import { snippetGetFiles } from './getFile';
+import { snippetProcessCode } from './processCode.js';
+import { snippetGetFiles } from './getFile.js';
 
 /** Get and compile snippet code given it's root folder Vinyl */
 export async function snippetGetCode (snippetName: string, allowEmpty: false): Promise<string>;

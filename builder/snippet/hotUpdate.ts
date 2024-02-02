@@ -3,13 +3,13 @@ import Stream from 'stream';
 import chalk from 'chalk';
 import type Vinyl from 'vinyl';
 
-import { getConnectionOptions, query } from '../util/database';
-import { info } from '../util/log';
+import { getConnectionOptions, query } from '../util/database.js';
+import { info } from '../util/log.js';
 
-import { snippetGetAll } from './getAll';
-import { snippetGetDocFile, snippetGetFiles } from './getFile';
-import { snippetGetName } from './getName';
-import { snippetPublishVersion } from './publishVersion';
+import { snippetGetAll } from './getAll.js';
+import { snippetGetDocFile, snippetGetFiles } from './getFile.js';
+import { snippetGetName } from './getName.js';
+import { snippetPublishVersion } from './publishVersion.js';
 
 export function snippetHotUpdate () {
   return new Stream.Writable({

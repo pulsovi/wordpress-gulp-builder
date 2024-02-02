@@ -1,6 +1,6 @@
-import { fs } from '../util/fs';
+import { fs } from '../util/fs.js';
 
-import { parallel } from 'gulp';
+import gulp from 'gulp'; const { parallel } = gulp;
 
 export const init = parallel(
   createTree,

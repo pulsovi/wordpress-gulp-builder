@@ -1,13 +1,13 @@
 import stream from 'stream';
 
-import { series, src, dest } from 'gulp';
+import gulp from 'gulp'; const { series, src, dest } = gulp;
 import type Vinyl from 'vinyl';
 
-import { fs } from '../util/fs';
-import { pipelineFollowError } from '../util/pipelineFollowError';
-import { pluginGetName } from '../plugin/getName';
+import { fs } from '../util/fs.js';
+import { pipelineFollowError } from '../util/pipelineFollowError.js';
+import { pluginGetName } from '../plugin/getName.js';
 
-import PotFile from './PotFile';
+import PotFile from './PotFile.js';
 
 export function updatePot (cb) {
   return pipelineFollowError(

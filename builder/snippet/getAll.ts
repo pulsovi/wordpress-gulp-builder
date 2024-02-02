@@ -1,9 +1,9 @@
-import { snippetGetCode } from './getCode';
-import { snippetGetDoc } from './getDoc';
-import { snippetGetId } from './getId';
-import { snippetGetScope } from './getScope';
-import { snippetGetTitle } from './getTitle';
-import { snippetGetVersion } from './getVersion';
+import { snippetGetCode } from './getCode.js';
+import { snippetGetDoc } from './getDoc.js';
+import { snippetGetId } from './getId.js';
+import { snippetGetScope } from './getScope.js';
+import { snippetGetTitle } from './getTitle.js';
+import { snippetGetVersion } from './getVersion.js';
 
 /** Get all the properties of a snippet from its name */
 export async function snippetGetAll (name: string) {

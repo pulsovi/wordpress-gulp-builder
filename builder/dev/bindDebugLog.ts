@@ -1,17 +1,17 @@
 import chalk from 'chalk';
-import { dest } from 'gulp';
+import gulp from 'gulp'; const { dest } = gulp;
 import watch from 'gulp-watch';
 import pumpify from 'pumpify';
 import type Vinyl from 'vinyl';
 
-import { config } from '../util/config';
-import { doAction } from '../util/doAction';
-import { fs } from '../util/fs';
-import { info, log } from '../util/log';
-import { vinylFilter } from '../util/vinylFilter';
+import { getConfig } from '../util/config.js';
+import { doAction } from '../util/doAction.js';
+import { fs } from '../util/fs.js';
+import { info, log } from '../util/log.js';
+import { vinylFilter } from '../util/vinylFilter.js';
 
 export function bindDebugLog () {
-  const cwd = `${config.server.root}/wp-content`;
+  const cwd = `${getConfig().server.root}/wp-content`;
   fs.ensureFile('./debug.log').catch(console.error);
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
   const loader = watch('debug.log', { cwd, ignorePermissionErrors: true })

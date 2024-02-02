@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-import { info } from '../util/log';
+import { info } from '../util/log.js';
 
-import { pluginGetTitle } from './getTitle';
-import type { PluginGetTitleOptions } from './getTitle';
-import { pluginGetVersion } from './getVersion';
-import type { PluginGetVersionOptions } from './getVersion';
+import { pluginGetTitle } from './getTitle.js';
+import type { PluginGetTitleOptions } from './getTitle.js';
+import { pluginGetVersion } from './getVersion.js';
+import type { PluginGetVersionOptions } from './getVersion.js';
 
 type PluginPublishVersionOptions = PluginGetTitleOptions & PluginGetVersionOptions;
 

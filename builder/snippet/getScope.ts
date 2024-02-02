@@ -1,6 +1,6 @@
-import { fs } from '../util/fs';
+import { fs } from '../util/fs.js';
 
-import { snippetGetFiles } from './getFile';
+import { snippetGetFiles } from './getFile.js';
 
 type SyncOrPromise<T> = T | Promise<T>;
 

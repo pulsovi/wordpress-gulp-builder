@@ -1,7 +1,7 @@
 import Stream from 'stream';
 
-import { follow } from './follow';
-import { stop } from './todo';
+import { follow } from './follow.js';
+import { stop } from './todo.js';
 
 /**
  * Get a list of streams, pipe each to the following one and return new Stream

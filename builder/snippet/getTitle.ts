@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import fs from 'fs-extra';
 
-import { snippetGetDocFile, snippetGetFile } from './getFile';
+import { snippetGetDocFile, snippetGetFile } from './getFile.js';
 
 type SyncOrPromise<T> = T | Promise<T>;
 

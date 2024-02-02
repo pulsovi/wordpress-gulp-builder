@@ -3,10 +3,12 @@ import Stream from 'stream';
 
 import type Vinyl from 'vinyl';
 
-import { fs } from './fs';
-import { stop } from './todo';
+import { fs } from './fs.js';
+import { stop } from './todo.js';
+import { fileURLToPath } from 'url';
 
-const template = fs.readFile(path.resolve(module.path, 'github-model.html'), 'utf8');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const template = fs.readFile(path.resolve(__dirname, 'github-model.html'), 'utf8');
 
 /**
  * Return Stream.Transform which transform html fragment file (Vinyl) to full

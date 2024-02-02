@@ -1,6 +1,6 @@
-import { watch } from 'gulp';
+import gulp from 'gulp'; const { watch } = gulp;
 
-import { onIdle } from '../util/onIdle';
+import { onIdle } from '../util/onIdle.js';
 
 export function watchBuilderChange (cb) {
   const watcher = watch(['./gulpfile.ts', './.wpbuilderrc.json', './builder/**/*']);

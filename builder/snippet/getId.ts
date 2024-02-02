@@ -1,6 +1,6 @@
-import { getConnectionOptions, query } from '../util/database';
+import { getConnectionOptions, query } from '../util/database.js';
 
-import { snippetGetTitle } from './getTitle';
+import { snippetGetTitle } from './getTitle.js';
 
 /** Get snippet name and return the ID of this snippet on the server */
 export async function snippetGetId (snippetName: string): Promise<number | null> {

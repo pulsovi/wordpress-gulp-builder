@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-import { info } from '../util/log';
+import { info } from '../util/log.js';
 
-import { snippetGetTitle } from './getTitle';
-import type { SnippetGetTitleOptions } from './getTitle';
-import { snippetGetVersion } from './getVersion';
-import type { SnippetGetVersionOptions } from './getVersion';
+import { snippetGetTitle } from './getTitle.js';
+import type { SnippetGetTitleOptions } from './getTitle.js';
+import { snippetGetVersion } from './getVersion.js';
+import type { SnippetGetVersionOptions } from './getVersion.js';
 
 type SnippetPublishVersionOptions = SnippetGetTitleOptions & SnippetGetVersionOptions;
 

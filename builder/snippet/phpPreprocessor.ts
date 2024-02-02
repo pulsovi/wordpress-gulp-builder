@@ -7,7 +7,7 @@ import chokidar from 'chokidar';
 import { error, info } from 'fancy-log';
 import Vinyl from 'vinyl';
 
-import { fs } from '../util/fs';
+import { fs } from '../util/fs.js';
 
 type CommandMatch = RegExpMatchArray & { groups: { command: string; arguments: string; }};
 export type Context = Record<string, unknown> & {

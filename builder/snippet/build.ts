@@ -3,15 +3,15 @@ import Stream from 'stream';
 import chalk from 'chalk';
 import type Vinyl from 'vinyl';
 
-import { streamToString } from '../util/streamToString';
+import { streamToString } from '../util/streamToString.js';
 
-import { snippetGetCode } from './getCode';
-import { snippetGetDoc } from './getDoc';
-import { snippetGetName } from './getName';
-import { snippetGetScope } from './getScope';
-import { snippetGetTitle } from './getTitle';
-import { snippetGetVersion } from './getVersion';
-import { snippetPublishVersion } from './publishVersion';
+import { snippetGetCode } from './getCode.js';
+import { snippetGetDoc } from './getDoc.js';
+import { snippetGetName } from './getName.js';
+import { snippetGetScope } from './getScope.js';
+import { snippetGetTitle } from './getTitle.js';
+import { snippetGetVersion } from './getVersion.js';
+import { snippetPublishVersion } from './publishVersion.js';
 
 /** Get snippet names and build them */
 export function snippetBuild () {

@@ -1,17 +1,19 @@
 import Stream from 'stream';
 
 import chalk from 'chalk';
-import { dest, series, src } from 'gulp';
+import gulp from 'gulp';
 import zip from 'gulp-zip';
 import type Vinyl from 'vinyl';
 
-import { log } from '../util/log';
-import { pipelineFollowError } from '../util/pipelineFollowError';
-import { doAction } from '../util/doAction';
+import { log } from '../util/log.js';
+import { pipelineFollowError } from '../util/pipelineFollowError.js';
+import { doAction } from '../util/doAction.js';
 
-import { pluginGetVersion } from './getVersion';
-import { pluginProcessDoc } from './processDoc';
-import { pluginPublishVersion } from './publishVersion';
+import { pluginGetVersion } from './getVersion.js';
+import { pluginProcessDoc } from './processDoc.js';
+import { pluginPublishVersion } from './publishVersion.js';
+
+const { dest, series, src } = gulp;
 
 /** Get plugin names and build them */
 export function pluginBuild () {

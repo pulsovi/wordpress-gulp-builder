@@ -4,13 +4,13 @@ import markdown from 'gulp-markdown';
 import type Vinyl from 'vinyl';
 import StreamFilter from 'streamfilter'
 
-import { pipelinePart } from '../util/pipelinePart';
-import { stop } from '../util/todo';
-import { vinylToString } from '../util/vinylToString';
+import { pipelinePart } from '../util/pipelinePart.js';
+import { stop } from '../util/todo.js';
+import { vinylToString } from '../util/vinylToString.js';
 
-import { snippetGetName } from './getName';
-import { snippetGetVersion } from './getVersion';
-import { snippetGetTitle } from './getTitle';
+import { snippetGetName } from './getName.js';
+import { snippetGetVersion } from './getVersion.js';
+import { snippetGetTitle } from './getTitle.js';
 
 /** Return a stream which take README.md file and return the formatted HTML for snippet */
 export function snippetProcessDoc (): Stream.Duplex {

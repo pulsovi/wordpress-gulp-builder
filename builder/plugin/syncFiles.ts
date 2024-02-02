@@ -1,22 +1,22 @@
 import path from 'path';
 
 import chalk from 'chalk';
-import { dest, series, src, parallel } from 'gulp';
+import gulp from 'gulp'; const { dest, series, src, parallel } = gulp;
 import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
 
-import { config } from '../util/config';
-import { filter } from '../util/filter';
-import { fs } from '../util/fs';
-import { info, log, logMove } from '../util/log';
-import { pipelinePart } from '../util/pipelinePart';
-import { unlinkDest } from '../util/unlinkDest';
+import { getConfig } from '../util/config.js';
+import { filter } from '../util/filter.js';
+import { fs } from '../util/fs.js';
+import { info, log, logMove } from '../util/log.js';
+import { pipelinePart } from '../util/pipelinePart.js';
+import { unlinkDest } from '../util/unlinkDest.js';
 
-import { pluginGetTitle } from './getTitle';
-import { pluginGetVersion } from './getVersion';
-import { pluginProcessCode } from './processCode';
-import { pluginProcessDoc } from './processDoc';
-import { pluginPublishVersion } from './publishVersion';
+import { pluginGetTitle } from './getTitle.js';
+import { pluginGetVersion } from './getVersion.js';
+import { pluginProcessCode } from './processCode.js';
+import { pluginProcessDoc } from './processDoc.js';
+import { pluginPublishVersion } from './publishVersion.js';
 
 /** Synchronize plugin files with the server */
 export const pluginsSyncFiles = series(
@@ -39,8 +39,8 @@ function pluginCopyOnlineCompiledFiles () {
     ['./*/languages/*.po', '*/languages/*.mo', '*/languages/*.json'],
     { base: 'src', cwd: 'src/plugins/' }
   )
-    .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
-    .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))
+    .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
+    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(log('copy'));
 }
 
@@ -80,15 +80,15 @@ function pluginWatchSimpleFiles () {
     .on('ready', ready)
     .pipe(filter(data => !data.relative.match(/^plugins(?:\/|\\)([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))
     .pipe(log())
-    .pipe(unlinkDest('.', { cwd: `${config.server.root}/wp-content` }))
-    .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))
+    .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
+    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
 }
 
 /** Watch for online compiled files and copy them here */
 function pluginWatchOnlineCompiledFiles () {
   const watcher = watch([], {
-    base: `${config.server.root}/wp-content`,
-    cwd: `${config.server.root}/wp-content/plugins/`,
+    base: `${getConfig().server.root}/wp-content`,
+    cwd: `${getConfig().server.root}/wp-content/plugins/`,
     ignoreInitial: true,
     ignorePermissionErrors: true,
   });
@@ -122,7 +122,7 @@ function pluginWatchCompiledFiles () {
     .on('ready', ready)
     .pipe(pluginProcessDoc())
     .pipe(pluginProcessCode())
-    .pipe(dest('.', { cwd: `${config.server.root}/wp-content` }))
+    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(log())
   ;
 

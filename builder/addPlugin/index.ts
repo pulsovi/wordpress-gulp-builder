@@ -1,6 +1,6 @@
-import { fs } from '../util/fs';
-import { prompt } from '../util/prompt';
-import { kebabify, pascalify} from '../util/textCase';
+import { fs } from '../util/fs.js';
+import { prompt } from '../util/prompt.js';
+import { kebabify, pascalify} from '../util/textCase.js';
 
 export async function addPlugin (cb) {
   //const pluginName = await prompt('plugin dirname :');

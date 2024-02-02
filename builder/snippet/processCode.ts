@@ -3,12 +3,12 @@ import Stream from 'stream';
 import StreamFilter from 'streamfilter';
 import type Vinyl from 'vinyl';
 
-import { pipelinePart } from '../util/pipelinePart';
+import { pipelinePart } from '../util/pipelinePart.js';
 
-import { snippetGetFile } from './getFile';
-import { snippetGetName } from './getName';
-import { snippetPhpPreprocessor } from './phpPreprocessor';
-import type { Context } from './phpPreprocessor';
+import { snippetGetFile } from './getFile.js';
+import { snippetGetName } from './getName.js';
+import { snippetPhpPreprocessor } from './phpPreprocessor.js';
+import type { Context } from './phpPreprocessor.js';
 
 /** Return a Stream.Transform which process snippet code file */
 export function snippetProcessCode (context?: Context): Stream.Duplex {

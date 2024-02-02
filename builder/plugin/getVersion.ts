@@ -1,6 +1,6 @@
-import { fs } from '../util/fs';
+import { fs } from '../util/fs.js';
 
-import { pluginGetFile } from './getFile';
+import { pluginGetFile } from './getFile.js';
 
 type SyncOrPromise<T> = T | Promise<T>;
 export type PluginGetVersionOptions = {

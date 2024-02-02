@@ -3,11 +3,11 @@ import rename from 'gulp-rename';
 import StreamFilter from 'streamfilter'
 import type Vinyl from 'vinyl';
 
-import { github } from '../util/github';
-import { htmlWithBase } from '../util/htmlWithBase';
-import { parallel } from '../util/parallel';
-import { passthrough } from '../util/passthrough';
-import { pipelinePart } from '../util/pipelinePart';
+import { github } from '../util/github.js';
+import { htmlWithBase } from '../util/htmlWithBase.js';
+import { parallel } from '../util/parallel.js';
+import { passthrough } from '../util/passthrough.js';
+import { pipelinePart } from '../util/pipelinePart.js';
 
 /** Return a stream which take *.md files and return the formatted HTML for plugin */
 export function pluginProcessDoc () {

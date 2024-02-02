@@ -1,9 +1,11 @@
-import { dest, src } from 'gulp';
+import gulp from 'gulp';
 
-import { log } from '../util/log';
-import { pipelineFollowError } from '../util/pipelineFollowError';
+import { log } from '../util/log.js';
+import { pipelineFollowError } from '../util/pipelineFollowError.js';
 
-import { pluginBuild } from './build';
+import { pluginBuild } from './build.js';
+
+const { dest, src } = gulp;
 
 /** List plugins and build each of them */
 export function pluginBuildAll () {

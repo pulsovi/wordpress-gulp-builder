@@ -2,9 +2,9 @@ import path from 'path';
 
 import mysql from 'mysql2';
 
-import { config } from './config';
-import { fs } from './fs';
-import { onIdle } from './onIdle';
+import { getConfig } from './config.js';
+import { fs } from './fs.js';
+import { onIdle } from './onIdle.js';
 
 type SyncOrPromise<T> = T | Promise<T>;
 
@@ -21,7 +21,7 @@ export async function query<T extends Ftype>(sql: string, values: Values): Promi
 }
 
 export function getConnectionOptions (): Database {
-  const configFile = path.join(config.server.root, 'wp-config.php');
+  const configFile = path.join(getConfig().server.root, 'wp-config.php');
   const configContent = fs.readFileSync(configFile, 'utf8');
   const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups!.prefix;
   const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.dbname;

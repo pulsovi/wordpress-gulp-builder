@@ -1,8 +1,8 @@
 import Stream from 'stream';
 
-import { stop } from './todo';
+import { stop } from './todo.js';
 
-import { TeeOptions } from './tee';
+import { TeeOptions } from './tee.js';
 
 /**
  * Return a duplex stream which send all it's data to all the given streams

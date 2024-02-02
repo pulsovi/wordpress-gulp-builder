@@ -1,12 +1,12 @@
 import type Stream from 'stream';
 
-import { src } from 'gulp';
+import gulp from 'gulp'; const { src } = gulp;
 
-import { snippetGetDocFile } from './getFile';
-import { snippetProcessDoc } from './processDoc';
+import { snippetGetDocFile } from './getFile.js';
+import { snippetProcessDoc } from './processDoc.js';
 
-import { pipelineFollowError } from '../util/pipelineFollowError';
-import { streamToString } from '../util/streamToString';
+import { pipelineFollowError } from '../util/pipelineFollowError.js';
+import { streamToString } from '../util/streamToString.js';
 
 /** Get the HTML doc of a snippet as a stream */
 export async function snippetGetDoc (snippetName: string, isRequired = false): Promise<string> {

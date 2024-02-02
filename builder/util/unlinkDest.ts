@@ -1,7 +1,7 @@
 import path from 'path';
 import Stream from 'stream';
 
-import { fs } from './fs';
+import { fs } from './fs.js';
 
 /**
  * Delete dest file if File.event === 'unlink'

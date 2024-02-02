@@ -1,6 +1,6 @@
 import { inspect } from 'util';
 
-import { sleepSync } from './time';
+import { sleepSync } from './time.js';
 
 const debugMode = process.env.NODE_ENV !== 'prod';
 

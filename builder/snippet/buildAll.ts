@@ -1,11 +1,11 @@
 import path from 'path';
 
 import chalk from 'chalk';
-import { dest, src } from 'gulp';
+import gulp from 'gulp'; const { dest, src } = gulp;
 
-import { log } from '../util/log';
+import { log } from '../util/log.js';
 
-import { snippetBuild } from './build';
+import { snippetBuild } from './build.js';
 
 /** List snippets and build each of them */
 export function snippetBuildAll () {

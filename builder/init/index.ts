@@ -5,6 +5,7 @@ import gulp from 'gulp'; const { parallel } = gulp;
 export const init = parallel(
   createTree,
   setGitignore,
+  setPackageJson,
 );
 
 async function createTree (cb) {
@@ -41,4 +42,12 @@ function addGitignore (line: string, title: string): void {
   }
   else lines.push(line, '');
   fs.writeFileSync('.gitignore', lines.join('\n'), 'utf8');
+}
+
+function setPackageJson (cb) {
+  const json = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  json.workspaces = json.workspaces || [];
+  if (!json.workspaces.includes('src/plugins/*')) json.workspaces.push('src/plugins/*');
+  fs.writeFileSync('package.json', JSON.stringify(json, null, 2), 'utf8');
+  cb();
 }

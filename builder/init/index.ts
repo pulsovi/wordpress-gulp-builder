@@ -22,6 +22,7 @@ function setGitignore (cb) {
   addGitignore('/build', '# generated files');
   addGitignore('/tsconfig.json', '# generated files');
   addGitignore('/gulpfile.ts', '# generated files');
+  addGitignore('node_modules', '# npm files');
   cb();
 }
 

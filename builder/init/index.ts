@@ -46,8 +46,22 @@ function addGitignore (line: string, title: string): void {
 
 function setPackageJson (cb) {
   const json = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+  // set workspaces
   json.workspaces = json.workspaces || [];
   if (!json.workspaces.includes('src/plugins/*')) json.workspaces.push('src/plugins/*');
+
+  // set scripts
+  json.scripts = json.scripts ?? {};
+  json.scripts.dev = json.scripts.dev ?? 'yarn wpbuilder dev';
+  if (process.argv.includes('--full')) {
+    json.scripts.build = json.scripts.build ?? 'yarn prebuild && yarn wpbuilder build && yarn postbuild';
+    json.scripts.prebuild = json.scripts.prebuild ?? "cp *.sublime-project sproject.dat && git stash push -m 'yarn prebuild' --include-untracked";
+    json.scripts.postbuild = json.scripts.postbuild ?? "((git stash list | grep $(git rev-parse --short HEAD) | grep 'yarn prebuild') || (git stash list | grep $(git rev-parse --abbrev-ref HEAD) | grep 'yarn prebuild')) && git stash pop && mv sproject.dat *.sublime-project"
+  } else {
+    json.scripts.build = json.scripts.build ?? 'yarn wpbuilder build';
+  }
+
   fs.writeFileSync('package.json', JSON.stringify(json, null, 2), 'utf8');
   cb();
 }

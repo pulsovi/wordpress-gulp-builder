@@ -72,7 +72,7 @@ function pluginWatchFiles () {
 
 /** Watch for simple files which not need any compilation and copy them to the server */
 function pluginWatchSimpleFiles () {
-  const fileTypes = ['css', 'js', 'php', 'pot', 'svg'].map(ext => `**/*.${ext}`);
+  const fileTypes = ['css', 'js', 'php', 'pot', 'svg', 'ttf', 'woff2'].map(ext => `**/*.${ext}`);
   return watch(
     fileTypes,
     { base: 'src', cwd: 'src/plugins/', ignoreInitial: false, ignorePermissionErrors: true }

@@ -129,6 +129,29 @@ commands.include_once = async function includeOnce (match, data, context): Promi
   return includeFile.contents.toString();
 };
 
+commands.eval = async function evalPreprocessor (match, data, context): Promise<string> {
+  try {
+    const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+    const vinyl = new Vinyl({
+      cwd: data.cwd,
+      contents: await fs.readFile(target),
+      stat: await fs.stat(target),
+      base: data.base,
+      path: target,
+    });
+
+    await _snippetPhpPreprocessor(vinyl, context);
+    if (context.follow) setDependency(data.path, target, data.base);
+
+    const content = vinyl.contents.toString();
+    const phpString = `'${content.replace(/^\s*<\?php/u, '').replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
+    return `eval(${phpString});`;
+  } catch (error) {
+    console.log(error);
+    return `/* ${error.message} */`;
+  }
+}
+
 /** Auto reload parent when dependency change */
 function setDependency (parent: string, dependency: string, base = ''): void {
   const offset = base ? base.length + 1 : 0;

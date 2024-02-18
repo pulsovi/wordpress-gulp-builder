@@ -10,7 +10,7 @@ export const init = parallel(
 
 async function createTree (cb) {
   await Promise.all([
-    fs.ensureDir('src'),
+    fs.ensureFile('src/plugins/.gitkeep'),
   ]);
   cb();
 }

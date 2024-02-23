@@ -39,7 +39,7 @@ class ${snippetClassName} {
    * This class is not meant to be instantiated,
    * it only provides static methods
    *
-   * @since 1.0
+   * @since ${snippetVersion}
    * @access private
    */
   private function __construct () {

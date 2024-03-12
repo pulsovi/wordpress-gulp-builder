@@ -35,26 +35,26 @@ export async function addSnippet (cb) {
 ${snippetScope ? ` * Scope: ${snippetScope}\n`: ''}\
  */
 class ${snippetClassName} {
-  /**
-   * This class is not meant to be instantiated,
-   * it only provides static methods
-   *
-   * @since ${snippetVersion}
-   * @access private
-   */
-  private function __construct () {
-    /* prevent external instantiation */
-  }
+    /**
+     * This class is not meant to be instantiated,
+     * it only provides static methods
+     *
+     * @since ${snippetVersion}
+     * @access private
+     */
+    private function __construct () {
+        /* prevent external instantiation */
+    }
 
-  /**
-   * initialize the snippet
-   *
-   * @since ${snippetVersion}
-   * @access public
-   */
-  public static function init () {
+    /**
+     * initialize the snippet
+     *
+     * @since ${snippetVersion}
+     * @access public
+     */
+    public static function init () {
 
-  }
+    }
 }
 
 add_action('plugins_loaded', [${snippetClassName}::class, 'init']);

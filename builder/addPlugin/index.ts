@@ -27,15 +27,15 @@ export async function addPlugin (cb) {
  * Domain Path: /languages
  */
 class ${pluginClassName} {
-  /**
-   * initialize the plugin
-   *
-   * @since ${pluginVersion}
-   * @access public
-   */
-  static function init () {
+    /**
+     * initialize the plugin
+     *
+     * @since ${pluginVersion}
+     * @access public
+     */
+    static function init () {
 
-  }
+    }
 }
 
 add_action('plugins_loaded', [${pluginClassName}::class, 'init']);

@@ -1,3 +1,4 @@
+import { getConfigKey } from '../util/config.js';
 import { fs } from '../util/fs.js';
 import { prompt } from '../util/prompt.js';
 import { kebabify, pascalify} from '../util/textCase.js';
@@ -7,7 +8,7 @@ export async function addSnippet (cb) {
   const snippetTitle = await prompt('snippet title :');
   const snippetDescription = await prompt('snippet description :');
   const snippetVersion = await prompt('snippet version :');
-  const snippetAuthor = await prompt('snippet author :');
+  const snippetAuthor = await prompt('snippet author :', getConfigKey('author', ''));
   const snippetScope = await prompt(`Scope: Optionel, par défaut vaut 'global'.
   Choix possibles :
     - 'global' pour un snippet PHP executé systèmatiquement,

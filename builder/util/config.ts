@@ -19,12 +19,10 @@ interface Config {
 }
 
 let config: Config | null = null;
-export function getConfig () {
-  if (config) return config;
-  try { config = JSON.parse(fs.readFileSync('.wpbuilderrc.json', 'utf8')); }
-  catch (error) { createConfig(); }
-  return config!;
-}
+try { config = JSON.parse(fs.readFileSync('.wpbuilderrc.json', 'utf8')); }
+catch (error) { createConfig(); }
+
+export function getConfig () { return config!; }
 
 export function createConfig () {
   promptConfig(
@@ -58,6 +56,8 @@ export function createConfig () {
 
     promptConfig('Please indicate the AuthKey of your wp_version_server instance : ', 'publish.auth');
   }
+
+  promptConfig('Default value for the Author field (leave blank if you don\'t want to set it):', 'author');
 }
 
 export function promptConfig <T extends unknown = string>(message: string, prop: string | string[], { validate, sanitize }: {
@@ -82,6 +82,7 @@ export function promptConfig <T extends unknown = string>(message: string, prop:
 }
 
 export function getConfigKey <T extends unknown = string>(prop: string | string[], defaultValue: T): T;
+export function getConfigKey <T extends unknown = string>(prop: string | string[], defaultValue?: T): T | null;
 export function getConfigKey <T extends unknown = string>(prop: string | string[], defaultValue?: T): T | null {
   let value = get<T>(config, prop);
   if (value === null) try {
@@ -112,7 +113,7 @@ function get<T extends unknown>(root, prop: string | string[]): T | null {
     if ('object' !== typeof parent || !parent) return null;
     parent = parent[pathPart];
   }
-  if (!(key in parent)) return null;
+  if (!parent || 'object' !== typeof parent || !(key in parent)) return null;
   return parent[key] as T;
 }
 

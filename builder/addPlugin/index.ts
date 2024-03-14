@@ -1,5 +1,6 @@
 import { fs } from '../util/fs.js';
 import { prompt } from '../util/prompt.js';
+import { getConfigKey } from '../util/config.js';
 import { kebabify, pascalify} from '../util/textCase.js';
 
 export async function addPlugin (cb) {
@@ -7,7 +8,7 @@ export async function addPlugin (cb) {
   const pluginTitle = await prompt('plugin title :');
   const pluginDescription = await prompt('plugin description :');
   const pluginVersion = await prompt('plugin version :');
-  const pluginAuthor = await prompt('plugin author :');
+  const pluginAuthor = await prompt('plugin author :', getConfigKey('author', ''));
   const pluginClassName = pascalify(pluginTitle);
   const pluginSlug = kebabify(pluginTitle);
   const pluginName = pluginSlug;

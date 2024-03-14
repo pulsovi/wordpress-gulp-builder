@@ -72,6 +72,7 @@ export function promptConfig <T extends unknown = string>(message: string, prop:
 
   do {
     value = promptSync()(message);
+    if (value === null) throw new Error('Exit key ^C pressed');
     if ('function' === typeof sanitize) value = sanitize(value);
     if ('function' === typeof validate) valid = validate(value);
   } while (!valid);

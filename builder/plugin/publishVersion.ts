@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import { getConfig } from '../util/config.js';
 import { info } from '../util/log.js';
 
 import { pluginGetTitle } from './getTitle.js';
@@ -13,6 +14,9 @@ const versions: Record<string, string> = {};
 
 /** publish given version as last version of given plugin */
 export async function pluginPublishVersion (options: PluginPublishVersionOptions) {
+  const {publish} = getConfig();
+  if (!publish?.use) return;
+  const url = `${publish.url}/${publish.auth}`;
   const title = await pluginGetTitle({ ...options, async: true });
   const version = await pluginGetVersion({ ...options, async: true });
 
@@ -27,7 +31,7 @@ export async function pluginPublishVersion (options: PluginPublishVersionOptions
   return await axios({
     method: 'POST',
     data: { name: title, version },
-    url: 'http://wp-snippet.marchev.fr/s3HR2pEMg4p4'
+    url
   }).then(result => {
     info('pluginPublishVersion', { title, version }, result.data);
     return result;

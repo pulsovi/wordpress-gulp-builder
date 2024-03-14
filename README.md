@@ -10,6 +10,14 @@ yarn add -D wp-gulp-builder@https://github.com/pulsovi/wordpress-gulp-builder.gi
 yarn wpbuilder init
 ```
 
+## Config
+
+When a command is first executed, a series of questions are asked on the command line to fill out the configuration file.
+
+This file is named `.wpbuilderrc.json`.
+
+You can copy this file to your user folder so that it can be used as default values for all your projects using this builder.
+
 ## Usage
 
 ### build

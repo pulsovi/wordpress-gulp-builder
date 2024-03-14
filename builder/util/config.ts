@@ -57,25 +57,27 @@ export function createConfig () {
     promptConfig('Please indicate the AuthKey of your wp_version_server instance : ', 'publish.auth');
   }
 
-  promptConfig('Default value for the Author field (leave blank if you don\'t want to set it):', 'author');
+  promptConfig('Default value for the Author field (leave blank if you don\'t want to set it) : ', 'author');
 }
 
 export function promptConfig <T extends unknown = string>(message: string, prop: string | string[], { validate, sanitize }: {
   validate?: (val: any) => boolean;
   sanitize?: (val: string) => any;
 } = {}): T {
-  const exists = getConfigKey<T>(prop);
-  if (exists !== null && ('function' !== typeof validate || validate(exists))) return exists;
-
   let value;
-  let valid = true;
 
-  do {
-    value = promptSync()(message);
-    if (value === null) throw new Error('Exit key ^C pressed');
-    if ('function' === typeof sanitize) value = sanitize(value);
-    if ('function' === typeof validate) valid = validate(value);
-  } while (!valid);
+  const exists = getConfigKey<T>(prop);
+  if (exists !== null && ('function' !== typeof validate || validate(exists))) value = exists;
+  else {
+    let valid = true;
+
+    do {
+      value = promptSync()(message);
+      if (value === null) throw new Error('Exit key ^C pressed');
+      if ('function' === typeof sanitize) value = sanitize(value);
+      if ('function' === typeof validate) valid = validate(value);
+    } while (!valid);
+  }
 
   config = set<Config>(config ?? {}, prop, value);
   fs.writeFileSync('.wpbuilderrc.json', JSON.stringify(config, null, 2), 'utf8');

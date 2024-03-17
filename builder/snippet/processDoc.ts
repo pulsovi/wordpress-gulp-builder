@@ -5,6 +5,7 @@ import type Vinyl from 'vinyl';
 import StreamFilter from 'streamfilter'
 
 import { pipelinePart } from '../util/pipelinePart.js';
+import { getConfig } from '../util/config.js';
 import { stop } from '../util/todo.js';
 import { vinylToString } from '../util/vinylToString.js';
 
@@ -38,8 +39,11 @@ function snippetDocFormat () {
         const version = await snippetGetVersion({ name: snippetName, async: true });
         const html = await vinylToString(data);
         const title = await snippetGetTitle({ name: snippetName, isRequired: true, async: true, html });
+        const config = getConfig();
+        const versionServer = config.publish?.use ? config.publish.url : false;
+        const versionLogo = versionServer ? `<img src="http://wp-snippet.marchev.fr/check?name=${escape(title)}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;">` : '';
         // const filtered = doc.replace(//ug, '🔗');
-        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version} <img src="http://wp-snippet.marchev.fr/check?name=${title}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;"></p><details style="display: inline-block; margin-left:1em;"><summary><h1 style="display: inline-block;">Documentation</h1></summary>${html}</details></div>`);
+        data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version} ${versionLogo}</p><details style="display: inline-block; margin-left:1em;"><summary><h1 style="display: inline-block;">Documentation</h1></summary>${html}</details></div>`);
         cb(null, data);
       } catch (error) {
         stop();

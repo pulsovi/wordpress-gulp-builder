@@ -1,3 +1,5 @@
+import { Transform } from 'node:stream';
+
 import chalk from 'chalk';
 import gulp from 'gulp'; const { dest } = gulp;
 import watch from 'gulp-watch';
@@ -15,26 +17,11 @@ export function bindDebugLog () {
   fs.ensureFile('./debug.log').catch(console.error);
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
   const loader = watch('debug.log', { cwd, ignorePermissionErrors: true })
-    .on('error', error => { info('bindDebugLog loader watcher error', error); })
-    .pipe(
-      vinylFilter((data: Vinyl) => Boolean(data.stat!.size))
-      .on('error', error => { info('bindDebugLog loader vinylFilter error', error); })
-    )
-    .pipe(
-      log('Error:', data => {
-        const lines = data.contents!.toString().split('\n') || [''];
-        const message = lines[0].length < 100 ? lines.join('\\n').slice(0, 100) : lines[0];
-        return chalk.red(message) + ' see debug.log file';
-      })
-      .on('error', error => { info('bindDebugLog loader log error', error); })
-    )
-    .pipe(
-      dest('.')
-      .on('error', error => { info('bindDebugLog loader dest error', error); })
-    );
+    .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
+    .pipe(onChange())
+    .pipe(dest('.'));
 
   const cleaner = watch('src', { ignorePermissionErrors: true })
-    .on('error', error => { info('bindDebugLog cleaner watcher error', error); })
     .pipe(
       doAction(async (data: Vinyl) => {
         if (data.event !== 'change') return;
@@ -42,8 +29,32 @@ export function bindDebugLog () {
         info(`${data.event} ${chalk.magenta(data.relative)}, truncate debug.log`);
         await fs.truncate(`${cwd}/debug.log`);
       })
-      .on('error', error => { info('bindDebugLog cleaner doAction error', error); })
     );
 
   return cleaner;
+
+  /**
+   * Handle debug.log file change
+   */
+  function onChange (): Transform {
+    return new Transform({
+      objectMode: true,
+      async transform (data: Vinyl, _encoding, cb) {
+        try {
+          const content: string = data.contents?.toString()
+            .replace(/\r\n|\r/gu, '\n')
+            .replace(/\n\n+(?!\[|$)/gu, '\n')
+            || '';
+          if (!content.endsWith('\n\n'))
+            fs.writeFileSync(data.path, content + '\n', 'utf8');
+          const index = content.lastIndexOf('\n\n[');
+          const start = ~index ? index + 2 : 0;
+          const message = content.substr(start, 150).replace(/\n/gu, '\\n');
+          info('Error: ' + chalk.red(message) + '. see debug.log file');
+          this.push(data);
+          cb();
+        } catch (error) { cb(error); }
+      }
+    });
+  }
 }

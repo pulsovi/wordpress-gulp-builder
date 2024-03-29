@@ -79,8 +79,11 @@ export function promptConfig <T extends unknown = string>(message: string, prop:
     } while (!valid);
   }
 
-  config = set<Config>(config ?? {}, prop, value);
-  fs.writeFileSync('.wpbuilderrc.json', JSON.stringify(config, null, 2), 'utf8');
+  if (value !== get(config, prop)) {
+    config = set<Config>(config ?? {}, prop, value);
+    fs.writeFileSync('.wpbuilderrc.json', JSON.stringify(config, null, 2), 'utf8');
+  }
+
   return value;
 }
 

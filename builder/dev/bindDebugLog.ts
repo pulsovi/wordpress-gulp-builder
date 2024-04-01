@@ -41,16 +41,18 @@ export function bindDebugLog () {
       objectMode: true,
       async transform (data: Vinyl, _encoding, cb) {
         try {
-          const content: string = data.contents?.toString()
-            .replace(/\r\n|\r/gu, '\n')
-            .replace(/\n\n+(?!\[|$)/gu, '\n')
-            || '';
-          if (!content.endsWith('\n\n'))
-            fs.writeFileSync(data.path, content + '\n', 'utf8');
+          if ('function' !== typeof data.contents?.toString) return;
+          const content: string = data.contents.toString()
+            .replace(/\r\n|\r/gu, '\n')        // Windows and Mac LE
+            .replace(/\n\n+(?!\[|$)/gu, '\n'); // Multiple LF inside one stack
+
+          if (!content.endsWith('\n\n')) fs.writeFileSync(data.path, content + '\n', 'utf8');
+
           const index = content.lastIndexOf('\n\n[');
           const start = ~index ? index + 2 : 0;
-          const message = content.substr(start, 150).replace(/\n/gu, '\\n');
+          const message = content.substr(start, 160).replace(/\n/gu, '\\n');
           info('Error: ' + chalk.red(message) + '. see debug.log file');
+
           this.push(data);
           cb();
         } catch (error) { cb(error); }

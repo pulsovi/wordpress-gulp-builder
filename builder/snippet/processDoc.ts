@@ -41,7 +41,7 @@ function snippetDocFormat () {
         const title = await snippetGetTitle({ name: snippetName, isRequired: true, async: true, html });
         const config = getConfig();
         const versionServer = config.publish?.use ? config.publish.url : false;
-        const versionLogo = versionServer ? `<img src="http://wp-snippet.marchev.fr/check?name=${escape(title)}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;">` : '';
+        const versionLogo = versionServer ? `<img src="${versionServer}/check?name=${escape(title)}&amp;version=${version}" style="vertical-align: bottom;width: 1.3em;">` : '';
         // const filtered = doc.replace(//ug, '🔗');
         data.contents = Buffer.from(`<div><p style="display: inline-block; margin: 0">Version ${version} ${versionLogo}</p><details style="display: inline-block; margin-left:1em;"><summary><h1 style="display: inline-block;">Documentation</h1></summary>${html}</details></div>`);
         cb(null, data);

@@ -21,11 +21,11 @@ const commands: Record<string, ((match: CommandMatch, data: Vinyl, context: Cont
 const commandRE = [
   /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
   /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
-  /('|")<<<(?<command>php_string) (?<arguments>[^>]*)>>>\1/u,
+  /('|")<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>\1/u,
   /^# ?(?<command>[a-z_]*)(?: (?<arguments>.*))?$/mu,
 
   /* ↓ this line MUST be the last item of the array ↓ */
-  /<<<(?<command>php_string) (?<arguments>[^>]*)>>>/u,
+  /<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>/u,
 ]
 
 /** return match of `content` against preprocess regexps */
@@ -145,7 +145,7 @@ commands.eval = async function evalPreprocessor (match, data, context): Promise<
 
     const content = vinyl.contents.toString();
     const phpString = `'${content.replace(/^\s*<\?php/u, '').replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
-    return `eval(${phpString});`;
+    return `eval(${phpString})`;
   } catch (error) {
     console.log(error);
     return `/* ${error.message} */`;

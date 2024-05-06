@@ -46,12 +46,16 @@ export function bindDebugLog () {
             .replace(/\r\n|\r/gu, '\n')        // Windows and Mac LE
             .replace(/\n\n+(?!\[|$)/gu, '\n'); // Multiple LF inside one stack
 
-          if (!content.endsWith('\n\n')) fs.writeFileSync(data.path, content + '\n', 'utf8');
+          if (!content.endsWith('\n\n')) try {
+            fs.writeFileSync(data.path, content + '\n', 'utf8');
+          } catch (_error) { /* do nothing */ }
 
           const index = content.lastIndexOf('\n\n[');
           const start = ~index ? index + 2 : 0;
-          const message = content.substr(start, 160).replace(/\n/gu, '\\n');
-          info('Error: ' + chalk.red(message) + '. see debug.log file');
+          const stop = Math.max(start + 150, Math.min(start + 1000, content.indexOf('\n', start)));
+          const startLine = content.slice(0, start).split('\n').length;
+          const message = content.slice(start, stop).replace(/\n/gu, '\\n');
+          info('Error: ' + chalk.red(message) + '\nsee debug.log file line' + startLine);
 
           this.push(data);
           cb();

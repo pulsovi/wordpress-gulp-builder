@@ -1,12 +1,12 @@
 import fsExtra from 'fs-extra';
 
 /** Add error stack to fs async errors */
-export const fs: typeof fsExtra = (() =>
-  Object.entries(fsExtra).reduce<typeof fsExtra>((fsDebug, [name, func]) => {
+export const fs = (() =>
+  Object.entries(fsExtra).reduce((fsDebug, [name, func]) => {
     if (typeof func !== 'function' || name.endsWith('Sync')) {
       fsDebug[name] = func;
     } else {
-      fsDebug[name as any] = function (...args) {
+      fsDebug[name] = function (...args) {
         let stack = new Error('').stack ?? '';
         try {
           const result = Reflect.apply(func, this, args);
@@ -21,7 +21,7 @@ export const fs: typeof fsExtra = (() =>
       }
     }
     return fsDebug;
-  }, {} as typeof fsExtra)
+  }, Object.assign({}, fsExtra))
 )();
 
 function packError (stack: string, error: Error): Error {

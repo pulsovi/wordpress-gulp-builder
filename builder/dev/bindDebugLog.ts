@@ -17,11 +17,13 @@ export function bindDebugLog () {
   fs.ensureFile('./debug.log').catch(console.error);
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
   const loader = watch('debug.log', { cwd, ignorePermissionErrors: true })
+    .on('error', error => console.log('gulp-watch error:', error))
     .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
     .pipe(onChange())
     .pipe(dest('.'));
 
   const cleaner = watch('src', { ignorePermissionErrors: true })
+    .on('error', error => console.log('gulp-watch error:', error))
     .pipe(
       doAction(async (data: Vinyl) => {
         if (data.event !== 'change') return;

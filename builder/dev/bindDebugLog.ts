@@ -55,7 +55,7 @@ export function bindDebugLog () {
           const stop = Math.max(start + 150, Math.min(start + 1000, content.indexOf('\n', start)));
           const startLine = content.slice(0, start).split('\n').length;
           const message = content.slice(start, stop).replace(/\n/gu, '\\n');
-          info('Error: ' + chalk.red(message) + '\nsee debug.log file line' + startLine);
+          info('Error: ' + chalk.red(message) + '\nsee debug.log file line ' + startLine);
 
           this.push(data);
           cb();

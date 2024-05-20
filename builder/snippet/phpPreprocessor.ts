@@ -71,7 +71,7 @@ async function _snippetPhpPreprocessor (data: Vinyl, context: Context): Promise<
     if (command in commands) {
       replacement = await commands[command](match, data, context);
     } else {
-      error(chalk.red(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}`));
+      error(chalk.red(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}.\nAvailable commands are : ${Object.keys(commands).join(', ')}`));
     }
     while (content.includes(match[0])) content = content.replace(match[0], replacement);
 

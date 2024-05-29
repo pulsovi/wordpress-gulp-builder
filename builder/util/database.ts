@@ -23,10 +23,10 @@ export async function query<T extends Ftype>(sql: string, values: Values): Promi
 export function getConnectionOptions (): Database {
   const configFile = path.join(getConfig().server.root, 'wp-config.php');
   const configContent = fs.readFileSync(configFile, 'utf8');
-  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>[a-z_0-9]+)\1;/u.exec(configContent)?.groups!.prefix;
-  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.dbname;
-  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.user;
-  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>[a-z-]+)\2\s*\);/u.exec(configContent)?.groups!.password;
+  const prefix = /\$table_prefix\s*=\s*('|")(?<prefix>(?:\\\1*|.*?))\1;/u.exec(configContent)?.groups!.prefix;
+  const database = /define\(\s*("|')DB_NAME\1,\s*('|")(?<dbname>(?:\\\2*|.*?))\2\s*\);/u.exec(configContent)?.groups!.dbname;
+  const user = /define\(\s*("|')DB_USER\1,\s*('|")(?<user>(?:\\\2*|.*?))\2\s*\);/u.exec(configContent)?.groups!.user;
+  const password = /define\(\s*("|')DB_PASSWORD\1,\s*('|")(?<password>(?:\\\2*|.*?))\2\s*\);/u.exec(configContent)?.groups!.password;
 
   if (!database || !user || !password || !prefix) {
     console.log(configFile);

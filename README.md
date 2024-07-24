@@ -30,13 +30,15 @@ You can copy this file to your user folder so that it can be used as default val
 
 ### updatePot
 
-`yarn wpbuilder updatePot` will add references to your `*.tsx` files in the `*.pot` files of your plugins.
+`yarn wpbuilder updatePot` will add references to the `*.tsx` files in the `*.pot` files of the plugins.
 
 ### addPlugin
 
 Each plugin need to have a `.php` file with the same name of its directory name.
 
-`yarn wpbuilder addPlugin` will add these files
+`yarn wpbuilder addPlugin` will add this file (e.g : `src/plugins/my-plugin/my-plugin.php`)
+
+#### plugin build
 
 All files in the plugin directory is copied as is to the `.zip` archive, except of thoses files which are compiled :
 
@@ -49,7 +51,7 @@ All files in the plugin directory is copied as is to the `.zip` archive, except 
         - Add `<base target="_blank" />` balise.
         - Add a script which put the value of the GET query parameter `base` as the `<base>` `href` value.
 
-#### snippets
+### addSnippet
 
 `yarn wpbuilder addSnippet`
 
@@ -59,6 +61,14 @@ Two files are compiled for each snippet :
 
 - **code file :** the `.php` file which have the same name as the snippet directory. This file is compiled following the [API > Snippets](#preprocessor) instructions.
 - **documentation file :** the `README.md` file. This file is compiled as HTML code, wrapped by a `<details>` HTML bloc and used as `documentation` field of the snippet.
+
+### unreleasedSince
+
+`yarn wpbuilder unreleasedSince`
+
+replace each occurence of `@unreleased` with `@since version` in all files of each plugin / snippet. `version` is the version of the plugin / snippet auto detected.
+
+It's possible to make only one plugin / snippet by adding the arg `plugin=my-plugin` or `snippet=my-snippet`. The `my-plugin` or `my-snippet` portion of the arg is the dirname of the plugin / snippet.
 
 ## API
 

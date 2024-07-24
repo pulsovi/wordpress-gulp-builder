@@ -1,0 +1,23 @@
+import path from "path";
+import { snippetGetVersion } from "./getVersion.js";
+
+export default class Snippet {
+  public readonly name: string;
+  private _version: SyncOrPromise<string>;
+  public version: string;
+
+  public constructor (name: string) {
+    this.name = name;
+  }
+
+  public getDir () {
+    return path.join('./src/snippets', this.name);
+  }
+
+  public async getVersion () {
+    if (this.version) return this.version;
+    if (!this._version) this._version = snippetGetVersion({...this, async: true, isRequired: true});
+    this.version = await this._version;
+    return this.version;
+  }
+}

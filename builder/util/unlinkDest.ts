@@ -4,7 +4,8 @@ import Stream from 'stream';
 import { fs } from './fs.js';
 
 /**
- * Delete dest file if File.event === 'unlink'
+ * Return a Transform stream of Vinyl which deletes dest file when
+ * `File.event === 'unlink'` and follows all other files to its output
  */
 export function unlinkDest (outFolder, opt) {
   const stream = new Stream.Transform({ objectMode: true });

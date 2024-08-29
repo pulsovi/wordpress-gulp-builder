@@ -122,6 +122,7 @@ function pluginWatchCompiledFiles () {
     .on('ready', ready)
     .pipe(pluginProcessDoc())
     .pipe(pluginProcessCode())
+    .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(log())
   ;

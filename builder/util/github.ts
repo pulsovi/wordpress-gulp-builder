@@ -4,7 +4,6 @@ import Stream from 'stream';
 import type Vinyl from 'vinyl';
 
 import { fs } from './fs.js';
-import { stop } from './todo.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,10 +22,11 @@ export function github () {
     objectMode: true,
     async transform (data: Vinyl, _encoding, cb) {
       const title = data.stem;
-      if (!data.contents) stop();
-      const body = data.contents!.toString();
-      const html = (await template).replace('<<<title>>>', title).replace('<<<body>>>', body);
-      data.contents = Buffer.from(html);
+      const body = data.contents?.toString();
+      if (body) {
+        const html = (await template).replace('<<<title>>>', title).replace('<<<body>>>', body);
+        data.contents = Buffer.from(html);
+      }
       cb(null, data);
     }
   });

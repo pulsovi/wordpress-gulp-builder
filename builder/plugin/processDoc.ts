@@ -19,17 +19,21 @@ export function pluginProcessDoc () {
 
   return pipelinePart(
     markdownFilter,
-    pipelinePart(
-      markdown({ gfm: true }),
-      parallel([
-        passthrough(),
-        pipelinePart(
-          github(),
-          htmlWithBase(),
-          rename(path => { path.basename += '-full' }),
-        )
-      ], { clone: true, contents: false }),
-    ),
+    parallel([
+      passthrough(),
+      pipelinePart(
+        markdown({ gfm: true }),
+        rename(path => { path.extname = '.html'; }),
+        parallel([
+          passthrough(),
+          pipelinePart(
+            github(),
+            htmlWithBase(),
+            rename(path => { path.basename += '-full'; }),
+          ),
+        ], { clone: true, contents: false }),
+      ),
+    ], { clone: true, contents: false }),
     markdownFilter.restore,
   );
 }

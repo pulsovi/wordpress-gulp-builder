@@ -15,6 +15,12 @@ export async function pluginsCleanServerFiles (cb) {
   const sources = knownPlugins
     .filter(dirent => dirent.isDirectory())
     .map(plugin => path.join(getConfig().server.root, 'wp-content/plugins', plugin.name, '**'));
+
+  if (!sources.length) {
+    cb();
+    return;
+  }
+
   return src(sources, { base: serverPluginFolder, read: false })
     .pipe(new Stream.Writable({
       objectMode: true,

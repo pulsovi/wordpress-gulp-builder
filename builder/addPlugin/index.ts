@@ -27,11 +27,15 @@ export async function addPlugin (cb) {
  * Text Domain: ${pluginSlug}
  * Domain Path: /languages
  */
+
+/**
+ * @unreleased
+ */
 class ${pluginClassName} {
     /**
      * initialize the plugin
      *
-     * @since ${pluginVersion}
+     * @unreleased
      * @access public
      */
     static function init () {

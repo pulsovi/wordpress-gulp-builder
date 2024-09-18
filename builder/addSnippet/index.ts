@@ -35,12 +35,16 @@ export async function addSnippet (cb) {
  * Author: ${snippetAuthor}
 ${snippetScope ? ` * Scope: ${snippetScope}\n`: ''}\
  */
+
+/**
+ * @unreleased
+ */
 class ${snippetClassName} {
     /**
      * This class is not meant to be instantiated,
      * it only provides static methods
      *
-     * @since ${snippetVersion}
+     * @unreleased
      * @access private
      */
     private function __construct () {
@@ -50,7 +54,7 @@ class ${snippetClassName} {
     /**
      * initialize the snippet
      *
-     * @since ${snippetVersion}
+     * @unreleased
      * @access public
      */
     public static function init () {

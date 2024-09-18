@@ -74,7 +74,14 @@ async function _snippetPhpPreprocessor (data: Vinyl, context: Context): Promise<
     } else {
       error(chalk.red(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}.\nAvailable commands are : ${Object.keys(commands).join(', ')}`));
     }
-    while (content.includes(match[0])) content = content.replace(match[0], replacement);
+
+    while (content.includes(match[0])) {
+      // cannot use content.replace() because replacement can content `$` which
+      // will be interpreted as a RegEx match index
+      const start = content.indexOf(match[0]);
+      const end = start + match[0].length;
+      content = content.slice(0, start) + replacement + content.slice(end);
+    }
 
     match = getMatch(content);
   }

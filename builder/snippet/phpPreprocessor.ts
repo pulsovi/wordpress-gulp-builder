@@ -5,6 +5,7 @@ import Stream from 'stream';
 import chalk from 'chalk';
 import chokidar from 'chokidar';
 import { error, info } from 'fancy-log';
+import ts from 'typescript';
 import Vinyl from 'vinyl';
 
 import { fs } from '../util/fs.js';
@@ -86,6 +87,27 @@ commands.include_raw = async function includeRaw (match, data, context): Promise
   const content = await fs.readFile(target, 'utf8');
   if (context.follow) setDependency(data.path, target, data.base);
   return content;
+};
+
+commands.include_typescript = async function includeTypescript (match, data, context): Promise<string> {
+    const target = path.resolve(path.dirname(data.path), match.groups.arguments);
+
+    if (!await fs.exists(target)) {
+        const [fullCommand] = match;
+        error(chalk.red(`phpPreprocessor.includeTypescript Error : "${fullCommand}" source file not found.`));
+        return fullCommand;
+    }
+
+    const tsContent = await fs.readFile(target, 'utf8');
+    const jsContent = ts.transpileModule(tsContent, { compilerOptions: {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.CommonJS,
+    }});
+
+    if (context.follow)
+        setDependency(data.path, target, data.base);
+
+    return jsContent.outputText;
 };
 
 commands.php_string = async function phpString (match, data, context): Promise<string> {

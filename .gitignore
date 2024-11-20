@@ -1,5 +1,6 @@
 # Editor files
 *.sublime-workspace
+.vscode
 
 # yarn files
 /node_modules
@@ -8,6 +9,7 @@
 /.yarn/cache
 /.yarn/install-state.gz
 /.yarn/unplugged
+/.yarn/sdks
 
 # build files
 /dist

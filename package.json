@@ -21,7 +21,7 @@
     "gulp-filter": "^7.0.0",
     "gulp-markdown": "^6",
     "gulp-rename": "^2.0.0",
-    "gulp-watch": "patch:gulp-watch@npm%3A5.0.1#./.yarn/patches/gulp-watch-npm-5.0.1-ab7de3c490.patch",
+    "gulp-watch": "^5.0.1",
     "gulp-zip": "^5.1.0",
     "inquirer": "^8",
     "mysql2": "^3.2.4",
@@ -36,14 +36,15 @@
   "repository": "https://github.com/pulsovi/wordpress-gulp-builder.git",
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPL-3.0-or-later",
-  "packageManager": "yarn@3.6.1",
+  "packageManager": "yarn@4.5.1",
   "devDependencies": {
     "@types/fs-extra": "^11",
     "@types/gulp": "^4.0.13",
     "@types/inquirer": "^9.0.3"
   },
   "resolutions": {
-    "gulp-watch@^5.0.1": "patch:gulp-watch@npm%3A5.0.1#./.yarn/patches/gulp-watch-npm-5.0.1-ab7de3c490.patch"
+    "gulp-watch@^5.0.1": "patch:gulp-watch@npm%3A5.0.1#./.yarn/patches/gulp-watch-npm-5.0.1-ab7de3c490.patch",
+    "@types/gulp-watch": "patch:@types/gulp-watch@npm%3A4.1.39#~/.yarn/patches/@types-gulp-watch-npm-4.1.39-4c3e18bf37.patch"
   },
   "type": "module"
 }

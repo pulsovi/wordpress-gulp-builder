@@ -7,9 +7,7 @@ import Vinyl from 'vinyl';
 
 import { getConfig } from '../util/config.js';
 import { filter } from '../util/filter.js';
-import { fs } from '../util/fs.js';
-import { info, log, logMove } from '../util/log.js';
-import { pipelinePart } from '../util/pipelinePart.js';
+import { info, log } from '../util/log.js';
 import { unlinkDest } from '../util/unlinkDest.js';
 
 import { pluginGetTitle } from './getTitle.js';
@@ -45,11 +43,11 @@ function pluginCopyOnlineCompiledFiles () {
 }
 
 function pluginWatchFiles () {
-  const watchers: { add: (name: string) => void; unwatch: (name: string) => void }[] = [
+  const watchers: { add: (name: string) => void; unwatch: (name: string) => void; }[] = [
     pluginWatchOnlineCompiledFiles(),
     pluginWatchCompiledFiles(),
     pluginWatchVersion(),
-  ]
+  ];
 
   watch('src/plugins/*/', {
     depth: 1,

@@ -1,0 +1,29 @@
+diff --git a/index.d.ts b/index.d.ts
+index 1ea79bf2a4b56184388f271586c071e532c93b5e..9776dc230974730c1b74ce81d97e3afc68c81ac0 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -2,8 +2,9 @@
+ 
+ import * as File from "vinyl";
+ import { SrcOptions } from "vinyl-fs";
++import type { WatchOptions } from "chokidar";
+ 
+-interface IOptions extends SrcOptions {
++type IOptions = SrcOptions & WatchOptions & {
+     ignoreInitial?: boolean | undefined;
+     events?: string[] | undefined;
+     base?: string | undefined;
+diff --git a/package.json b/package.json
+index 891dd15d5ea4384656e889a59100048cf2c10af9..86f83a2c4b1d763b3757c0179a84ddb09ab01bad 100644
+--- a/package.json
++++ b/package.json
+@@ -22,7 +22,8 @@
+     "dependencies": {
+         "@types/node": "*",
+         "@types/vinyl": "*",
+-        "@types/vinyl-fs": "*"
++        "@types/vinyl-fs": "*",
++        "chokidar": "^3.4.2"
+     },
+     "typesPublisherContentHash": "2ae1bfa44b17d9c529cfd9a5d08a5d5a903c58d038681d5dfc8255a20029affe",
+     "typeScriptVersion": "4.5"

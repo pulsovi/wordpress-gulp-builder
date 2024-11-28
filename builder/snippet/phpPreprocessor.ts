@@ -174,7 +174,7 @@ commands.eval = async function evalPreprocessor (match, data, context): Promise<
 
     const content = vinyl.contents.toString();
     const phpString = `'${content.replace(/^\s*<\?php/u, '').replace(/\\/gu, '\\\\').replace(/'/gu, "\\'")}'`;
-    return `eval(${phpString})`;
+    return `eval(${phpString});`;
   } catch (error) {
     console.log(error);
     return `/* ${error.message} */`;

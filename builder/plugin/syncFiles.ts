@@ -1,6 +1,7 @@
 import path from 'path';
 
 import chalk from 'chalk';
+import fs from 'fs-extra';
 import gulp from 'gulp'; const { dest, series, src, parallel } = gulp;
 import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
@@ -22,6 +23,7 @@ export const pluginsSyncFiles = series(
   parallel(
     pluginWatchFiles,
     pluginWatchSimpleFiles,
+    pluginCopyVendorFiles,
   ),
 );
 
@@ -40,6 +42,55 @@ function pluginCopyOnlineCompiledFiles () {
     .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(log('copy'));
+}
+
+/**
+ * List composer dependencies files - exclude dev deps - and copy them on the server
+ */
+function pluginCopyVendorFiles (cb) {
+  /**
+   * Fichiers de dépendances à n'envoyer qu'une fois
+   *
+   * ils sont ignorés du git, aucune modification ne devrait être faite dessus
+   * ici, on ne répercute pas de changements
+   */
+  src(
+    ['./*/vendor/**'],
+    { base: 'src', cwd: 'src/plugins/' }
+  )
+    .pipe(filterDevDeps())
+    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
+    .pipe(log('copy'));
+}
+
+function filterDevDeps () {
+  const composerFiles: Record<string, Record<string, any>> = {};
+
+  return filter(async data => {
+    if (data.isDirectory()) return true;
+
+    const pluginName = data.relative.split(path.sep)[1];
+    const from = `plugins/${pluginName}/vendor`;
+    const to = path.dirname(data.relative);
+    const packageName = path.relative(from, to).replace(/\\/gu, '/');
+    if (!packageName) return true;
+
+    const deps = await getDeps(pluginName);
+    return deps.some(dep => dep.startsWith(packageName) || packageName.startsWith(dep));
+  }, { restore: false });
+
+  async function getDeps (pluginName) {
+    if (!composerFiles[pluginName]) {
+      const composerFile = path.resolve('src/plugins', pluginName, 'composer.lock');
+      if (await fs.exists(composerFile)) {
+        const json = await fs.readJson(composerFile);
+        composerFiles[pluginName] = json.packages.map(pkg => pkg.name);
+      } else {
+        composerFiles[pluginName] = [];
+      }
+    }
+    return composerFiles[pluginName];
+  }
 }
 
 function pluginWatchFiles () {
@@ -70,10 +121,16 @@ function pluginWatchFiles () {
 
 /** Watch for simple files which not need any compilation and copy them to the server */
 function pluginWatchSimpleFiles () {
-  const fileTypes = ['css', 'js', 'php', 'pot', 'svg', 'ttf', 'woff2'].map(ext => `**/*.${ext}`);
+  const fileTypes = ['css', 'js', 'php', 'pot', 'svg', 'ttf', 'woff2', 'png'].map(ext => `**/*.${ext}`);
   return watch(
     fileTypes,
-    { base: 'src', cwd: 'src/plugins/', ignoreInitial: false, ignorePermissionErrors: true }
+    {
+      base: 'src',
+      cwd: 'src/plugins/',
+      ignored: ['src/plugins/*/vendor/**'],
+      ignoreInitial: false,
+      ignorePermissionErrors: true,
+    }
   )
     .on('ready', ready)
     .pipe(filter(data => !data.relative.match(/^plugins(?:\/|\\)([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))

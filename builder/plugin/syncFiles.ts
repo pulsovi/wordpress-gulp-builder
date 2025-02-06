@@ -63,22 +63,22 @@ function pluginCopyVendorFiles (cb) {
   )
     .pipe(filterDevDeps())
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
-    .pipe(log('copy'));
+    .pipe(log('vendor'));
 }
 
 function filterDevDeps () {
   const composerFiles: Record<string, Record<string, any>> = {};
 
   return filter(async data => {
-    if (data.isDirectory()) return true;
+    if (data.isDirectory()) return false;
 
     const pluginName = data.relative.split(path.sep)[1];
+    const deps = await getDeps(pluginName);
     const from = `plugins/${pluginName}/vendor`;
     const to = path.dirname(data.relative);
     const packageName = path.relative(from, to).replace(/\\/gu, '/');
-    if (!packageName) return true;
+    if (!packageName && deps.length) return true;
 
-    const deps = await getDeps(pluginName);
     return deps.some(dep => dep.startsWith(packageName) || packageName.startsWith(dep));
   }, { restore: false });
 

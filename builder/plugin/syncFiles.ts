@@ -5,6 +5,8 @@ import fs from 'fs-extra';
 import gulp from 'gulp'; const { dest, series, src, parallel } = gulp;
 import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
+import { vinylFile } from 'vinyl-file';
+import chokidar from 'chokidar';
 
 import { getConfig } from '../util/config.js';
 import { filter } from '../util/filter.js';
@@ -16,6 +18,7 @@ import { pluginGetVersion } from './getVersion.js';
 import { pluginProcessCode } from './processCode.js';
 import { pluginProcessDoc } from './processDoc.js';
 import { pluginPublishVersion } from './publishVersion.js';
+import { Readable } from 'stream';
 
 /** Synchronize plugin files with the server */
 export const pluginsSyncFiles = series(
@@ -121,22 +124,29 @@ function pluginWatchFiles () {
 
 /** Watch for simple files which not need any compilation and copy them to the server */
 function pluginWatchSimpleFiles () {
-  const fileTypes = ['css', 'js', 'php', 'pot', 'svg', 'ttf', 'woff2', 'png'].map(ext => `**/*.${ext}`);
-  return watch(
-    fileTypes,
-    {
-      base: 'src',
-      cwd: 'src/plugins/',
-      ignored: ['src/plugins/*/vendor/**'],
-      ignoreInitial: false,
-      ignorePermissionErrors: true,
-    }
-  )
+  const fileTypes = ['css', 'js', 'php', 'pot', 'svg', 'ttf', 'woff2', 'png'];
+  const stream = new Readable({ objectMode: true, read () {} });
+  chokidar.watch('.', {
+    cwd: 'src/plugins/',
+    ignoreInitial: false,
+    ignorePermissionErrors: true,
+    ignored (file, stats) {
+      if (/^src\/plugins\/([^\/]*)\/\1.php$/u.test(file)) return true;
+      if (/^src\/plugins\/[^\/]*\/(?:vendor|node_modules|tests?|coverage)\//u.test(file)) return true;
+      return Boolean(stats?.isFile()) && !fileTypes.some(type => file.endsWith(`.${type}`));
+    },
+  })
+    .on('all', async (event, path, stats) => {
+      if (stats?.isFile()) {
+        stream.push(Object.assign(await vinylFile(path, { cwd: 'src/plugins' }), {event}));
+      }
+    })
     .on('ready', ready)
-    .pipe(filter(data => !data.relative.match(/^plugins(?:\/|\\)([^\/\\]*)(?:\/|\\)\1.php$/), { restore: false }))
-    .pipe(log())
+
+  return stream
+    .pipe(log('simple'))
     .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
-    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
+    .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }));
 }
 
 /** Watch for online compiled files and copy them here */

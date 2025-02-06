@@ -8,5 +8,6 @@ export function vinylToString (data: Vinyl): SyncOrPromise<string> {
   const { contents } = data;
   if (!contents) return '.js';
   if (contents instanceof Buffer) return contents.toString();
-  return contents.pipe(streamToString());
+  if ('pipe' in contents) contents.pipe(streamToString());
+  throw new Error('Unknown contents type');
 }

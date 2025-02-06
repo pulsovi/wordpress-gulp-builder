@@ -3,7 +3,6 @@ import path from 'path';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import gulp from 'gulp'; const { dest, series, src, parallel } = gulp;
-import watch from 'gulp-watch';
 import Vinyl from 'vinyl';
 import { vinylFile } from 'vinyl-file';
 import chokidar from 'chokidar';
@@ -103,13 +102,10 @@ function pluginWatchFiles () {
     pluginWatchVersion(),
   ];
 
-  watch('src/plugins/*/', {
+  chokidar.watch('src/plugins/', {
     depth: 1,
-    events: ['addDir', 'unlinkDir'],
     ignoreInitial: false,
     ignorePermissionErrors: true,
-    read: false,
-    verbose: true,
   })
     .on('unlinkDir', dirname => { all('unwatch', path.basename(dirname)); })
     .on('addDir', dirname => { all('add', path.basename(dirname)); })
@@ -149,48 +145,73 @@ function pluginWatchSimpleFiles () {
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }));
 }
 
+
 /** Watch for online compiled files and copy them here */
 function pluginWatchOnlineCompiledFiles () {
-  const watcher = watch([], {
-    base: `${getConfig().server.root}/wp-content`,
-    cwd: `${getConfig().server.root}/wp-content/plugins/`,
+  const cwd = `${getConfig().server.root}/wp-content/plugins/`;
+  const watcher = chokidar.watch([], {
+    cwd,
     ignoreInitial: true,
     ignorePermissionErrors: true,
+    ignored (path, stats) {
+      return Boolean(stats?.isFile()) && !['mo', 'po', 'json'].some(ext => path.endsWith(`.${ext}`));
+    },
   });
 
-  watcher
+  const stream = new Readable({ objectMode: true, read () {} });
+  stream
     .pipe(log((data: Vinyl) => `${data.event} online ${chalk.magenta(data.relative)}`))
-    .pipe(dest('.', { cwd: 'src' }))
-  ;
+    .pipe(dest('.', { cwd: 'src' }));
+
+  watcher.on('all', async (event, path, stats) => {
+    if (stats?.isFile()) {
+      stream.push(Object.assign(await vinylFile(path, { cwd }), {event}));
+    }
+  });
 
   return {
     add (pluginName: string) { watcher.add(compiledFilesOf(pluginName)); },
     unwatch (pluginName: string) { watcher.unwatch(compiledFilesOf(pluginName)); },
   };
 
-  function compiledFilesOf (pluginDirName: string): string[] {
+  function compiledFilesOf (pluginDirName: string): string {
     const pluginName = path.basename(pluginDirName);
-    return ['mo', 'po', 'json'].map(ext => `${pluginName}/languages/*.${ext}`);
+    return `${pluginName}/languages`;
   }
 }
 
 /** Watch for compiled files, compile and copy them to the server */
 function pluginWatchCompiledFiles () {
-  const watcher = watch('**/*.md', {
-    base: 'src',
-    cwd: 'src/plugins',
-    ignoreInitial: false,
-    ignorePermissionErrors: true
-  });
-
-  watcher
-    .on('ready', ready)
+  const cwd = 'src/plugins';
+  const stream = new Readable({ objectMode: true, read () {} });
+  stream
     .pipe(pluginProcessDoc())
     .pipe(pluginProcessCode())
     .pipe(unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
-    .pipe(log())
+    .pipe(log('compiled'))
   ;
+
+  const watcher = chokidar.watch('.', {
+    cwd,
+    ignoreInitial: false,
+    ignorePermissionErrors: true,
+    ignored: (file, stats) => {
+      if (!stats) return false;
+      if (!stats.isFile()) return true;
+      if (file.endsWith('.md') || /^src\/plugins\/([^\/]*)\/\1.php$/u.test(file)) return false;
+      return true;
+    }
+  });
+
+  watcher
+    .on('ready', ready)
+    .on('all', async (event, path, stats) => {
+      if (stats?.isFile()) {
+        stream.push(Object.assign(await vinylFile(path, { cwd }), {event}));
+      }
+    });
+
 
   return {
     add (pluginName: string) { watcher.add(compiledFilesOf(pluginName)); },
@@ -204,13 +225,16 @@ function pluginWatchCompiledFiles () {
 
 /** Watch for plugin version change and publish them */
 function pluginWatchVersion () {
-  const watcher = watch([], {
-    base: 'src',
-    cwd: 'src/plugins',
+  const cwd = 'src/plugins';
+  const watcher = chokidar.watch([], {
+    cwd,
     ignoreInitial: false,
     ignorePermissionErrors: true
-  }, (file: Vinyl) => {
-    const code = file._contents.toString();
+  });
+
+  watcher.on('all', async (event, file, stats) => {
+    if (!stats?.isFile()) return;
+    const code = await fs.readFile(path.resolve(cwd, file), 'utf8');
     const version = pluginGetVersion({ code, isRequired: true });
     const title = pluginGetTitle({ code, isRequired: true });
     pluginPublishVersion({ version, title });
@@ -222,7 +246,7 @@ function pluginWatchVersion () {
   };
 
   function compiledFilesOf (pluginName: string) {
-    return [`${pluginName}/${pluginName}.php`];
+    return `${pluginName}/${pluginName}.php`;
   }
 }
 

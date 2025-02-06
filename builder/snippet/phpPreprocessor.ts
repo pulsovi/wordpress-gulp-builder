@@ -187,7 +187,6 @@ function setDependency (parent: string, dependency: string, base = ''): void {
   const watcher = chokidar.watch(dependency, {
     persistent: true,
     ignoreInitial: true,
-    disableGlobbing: true,
   }).on('all', event => {
     info(
       'phpPreprocessor dependency\n ',

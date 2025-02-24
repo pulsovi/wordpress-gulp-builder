@@ -14,6 +14,8 @@ import { pluginGetFile } from './getFile.js';
 import { pluginGetVersion } from './getVersion.js';
 import { pluginProcessDoc } from './processDoc.js';
 import { pluginPublishVersion } from './publishVersion.js';
+import { filter } from '../util/filter.js';
+import npath from 'path';
 
 const { dest, series, src } = gulp;
 
@@ -40,10 +42,35 @@ function pluginBuildTask (pluginName, version) {
   const zipFile = `${pluginName}/${pluginName}_${version}.zip`;
   return pipelineFollowError(
     src(`${pluginName}/**/*`, { cwd: 'src/plugins', base: 'src/plugins' }),
+    filterVendorFiles(pluginName),
     pluginProcessDoc(),
     zip(zipFile),
     dest('build/plugins'),
     log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`),
     doAction(async () => { await pluginPublishVersion({ name: pluginName, version }); }),
   );
+}
+
+function filterVendorFiles (pluginName) {
+  const deps = getDeps(pluginName);
+
+  return filter(async file => {
+    if (file.isDirectory()) return false;
+    const dependencies = await deps;
+    let path = file.relative.replace(/\\/gu, '/').replace(`${pluginName}/`, '');
+    if (!path.startsWith('vendor')) return true;
+    if (!dependencies.length) return false;
+    path = path.replace('vendor/', '');
+    return dependencies.some(item => path.startsWith(item));
+  }, { restore: false });
+}
+
+async function getDeps (pluginName) {
+  const composerFile = npath.resolve('src/plugins', pluginName, 'composer.lock');
+  try {
+    const json = await fs.readJson(composerFile);
+    return json.packages.map(pkg => pkg.name);
+  } catch (_error) {
+    return [];
+  }
 }

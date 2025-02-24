@@ -8,7 +8,6 @@ import { vinylFile } from 'vinyl-file';
 import chokidar from 'chokidar';
 
 import { getConfig } from '../util/config.js';
-import { filter } from '../util/filter.js';
 import { info, log } from '../util/log.js';
 import { unlinkDest } from '../util/unlinkDest.js';
 
@@ -18,14 +17,17 @@ import { pluginProcessCode } from './processCode.js';
 import { pluginProcessDoc } from './processDoc.js';
 import { pluginPublishVersion } from './publishVersion.js';
 import { Readable } from 'stream';
+import { walk } from '../util/walk.js';
 
 /** Synchronize plugin files with the server */
 export const pluginsSyncFiles = series(
-  pluginCopyOnlineCompiledFiles,
+  parallel(
+    pluginCopyOnlineCompiledFiles,
+    pluginCopyVendorFiles,
+  ),
   parallel(
     pluginWatchFiles,
     pluginWatchSimpleFiles,
-    pluginCopyVendorFiles,
   ),
 );
 
@@ -48,38 +50,37 @@ function pluginCopyOnlineCompiledFiles () {
 
 /**
  * List composer dependencies files - exclude dev deps - and copy them on the server
+ *
+ * Fichiers de dépendances à n'envoyer qu'une fois
+ *
+ * ils sont ignorés du git, aucune modification ne devrait être faite dessus
+ * ici, on ne répercute pas de changements
  */
-function pluginCopyVendorFiles (cb) {
-  /**
-   * Fichiers de dépendances à n'envoyer qu'une fois
-   *
-   * ils sont ignorés du git, aucune modification ne devrait être faite dessus
-   * ici, on ne répercute pas de changements
-   */
-  src(
-    ['./*/vendor/**'],
-    { base: 'src', cwd: 'src/plugins/' }
-  )
-    .pipe(filterDevDeps())
+function pluginCopyVendorFiles () {
+  const composerFiles: Record<string, Record<string, any>> = {};
+  const cwd = 'src/plugins';
+  return walk('.', {
+    async ignored (file, stats) {
+      file = file.replace(RegExp(`^${cwd}/?`), '');
+      const parts = file.split('/');
+      const pluginName = parts.shift();
+      const root = parts.shift();
+
+      if (!pluginName || !root) return false;
+      if (root !== 'vendor') return true;
+
+      const deps = await getDeps(pluginName);
+
+      const filename = parts.join('/');
+      if (!filename && deps.length) return false;
+
+      return !deps.some(dep => dep.startsWith(filename) || filename.startsWith(dep));
+    },
+    cwd,
+    base: 'src',
+  })
     .pipe(dest('.', { cwd: `${getConfig().server.root}/wp-content` }))
     .pipe(log('vendor'));
-}
-
-function filterDevDeps () {
-  const composerFiles: Record<string, Record<string, any>> = {};
-
-  return filter(async data => {
-    if (data.isDirectory()) return false;
-
-    const pluginName = data.relative.split(path.sep)[1];
-    const deps = await getDeps(pluginName);
-    const from = `plugins/${pluginName}/vendor`;
-    const to = path.dirname(data.relative);
-    const packageName = path.relative(from, to).replace(/\\/gu, '/');
-    if (!packageName && deps.length) return true;
-
-    return deps.some(dep => dep.startsWith(packageName) || packageName.startsWith(dep));
-  }, { restore: false });
 
   async function getDeps (pluginName) {
     if (!composerFiles[pluginName]) {
@@ -95,6 +96,8 @@ function filterDevDeps () {
   }
 }
 
+
+
 function pluginWatchFiles () {
   const watchers: { add: (name: string) => void; unwatch: (name: string) => void; }[] = [
     pluginWatchOnlineCompiledFiles(),
@@ -103,15 +106,18 @@ function pluginWatchFiles () {
   ];
 
   chokidar.watch('src/plugins/', {
-    depth: 1,
+    depth: 0,
     ignoreInitial: false,
     ignorePermissionErrors: true,
   })
-    .on('unlinkDir', dirname => { all('unwatch', path.basename(dirname)); })
-    .on('addDir', dirname => { all('add', path.basename(dirname)); })
+    .on('unlinkDir', all.bind(null, 'unwatch'))
+    .on('addDir', all.bind(null, 'add'))
   ;
 
-  function all (method: 'add' | 'unwatch', pluginName: string) {
+  function all (method: 'add' | 'unwatch', dirname: string) {
+    const pluginName = dirname.replace(/\\/gu, '/').replace(/^src\/plugins\/?/u, '').split('/')[0];
+    if (!pluginName) return;
+    info('pluginWatchFiles : plugin change', { method, pluginName });
     watchers.forEach(watcher => {
       watcher[method](pluginName);
     });
@@ -134,7 +140,7 @@ function pluginWatchSimpleFiles () {
   })
     .on('all', async (event, path, stats) => {
       if (stats?.isFile()) {
-        stream.push(Object.assign(await vinylFile(path, { cwd: 'src/plugins' }), {event}));
+        stream.push(Object.assign(await vinylFile(path, { cwd: 'src/plugins', base: 'src' }), {event}));
       }
     })
     .on('ready', ready)
@@ -165,7 +171,7 @@ function pluginWatchOnlineCompiledFiles () {
 
   watcher.on('all', async (event, path, stats) => {
     if (stats?.isFile()) {
-      stream.push(Object.assign(await vinylFile(path, { cwd }), {event}));
+      stream.push(Object.assign(await vinylFile(path, { cwd, base: 'plugins' }), {event}));
     }
   });
 
@@ -208,7 +214,7 @@ function pluginWatchCompiledFiles () {
     .on('ready', ready)
     .on('all', async (event, path, stats) => {
       if (stats?.isFile()) {
-        stream.push(Object.assign(await vinylFile(path, { cwd }), {event}));
+        stream.push(Object.assign(await vinylFile(path, { cwd, base: 'src' }), {event}));
       }
     });
 

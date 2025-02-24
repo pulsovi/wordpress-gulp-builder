@@ -9,6 +9,10 @@
     "postinstall": "tsc && cp builder/util/github-model.html dist/builder/util"
   },
   "dependencies": {
+    "@types/fs-extra": "^11",
+    "@types/gulp": "^4.0.13",
+    "@types/inquirer": "^9.0.3",
+    "@types/node": "^16",
     "axios": "^1.4.0",
     "chalk": "^4",
     "chokidar": "^4.0.3",
@@ -36,16 +40,5 @@
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPL-3.0-or-later",
   "packageManager": "yarn@4.6.0",
-  "devDependencies": {
-    "@types/fs-extra": "^11",
-    "@types/gulp": "^4.0.13",
-    "@types/gulp-watch": "^4.1.39",
-    "@types/inquirer": "^9.0.3",
-    "@types/node": "^16"
-  },
-  "resolutions": {
-    "gulp-watch@^5.0.1": "patch:gulp-watch@npm%3A5.0.1#./.yarn/patches/gulp-watch-npm-5.0.1-ab7de3c490.patch",
-    "@types/gulp-watch": "patch:@types/gulp-watch@npm%3A4.1.39#~/.yarn/patches/@types-gulp-watch-npm-4.1.39-4c3e18bf37.patch"
-  },
   "type": "module"
 }

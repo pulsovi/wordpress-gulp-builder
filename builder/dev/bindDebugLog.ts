@@ -1,39 +1,41 @@
-import { Transform } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 
 import chalk from 'chalk';
 import gulp from 'gulp'; const { dest } = gulp;
-import watch from 'gulp-watch';
-import pumpify from 'pumpify';
+import { watch } from 'chokidar';
 import type Vinyl from 'vinyl';
+import { vinylFile } from 'vinyl-file';
 
 import { getConfig } from '../util/config.js';
-import { doAction } from '../util/doAction.js';
 import { fs } from '../util/fs.js';
-import { info, log } from '../util/log.js';
+import { info } from '../util/log.js';
 import { vinylFilter } from '../util/vinylFilter.js';
 
 export function bindDebugLog () {
   const cwd = `${getConfig().server.root}/wp-content`;
+
   fs.ensureFile('./debug.log').catch(console.error);
   fs.ensureFile(`${cwd}/debug.log`).catch(console.error);
-  const loader = watch('debug.log', { cwd, ignorePermissionErrors: true })
-    .on('error', error => console.log('gulp-watch error:', error))
+
+  const loader = new Readable({ objectMode: true, read () {} });
+  loader
     .pipe(vinylFilter((data: Vinyl) => Boolean(data.stat!.size)))
     .pipe(onChange())
     .pipe(dest('.'));
+  watch('debug.log', { cwd, ignorePermissionErrors: true })
+    .on('error', error => console.log('watch error:', error))
+    .on('change', async file => {
+      loader.push(await vinylFile(file, { cwd }));
+    });
 
   const cleaner = watch('src', { ignorePermissionErrors: true })
-    .on('error', error => console.log('gulp-watch error:', error))
-    .pipe(
-      doAction(async (data: Vinyl) => {
-        if (data.event !== 'change') return;
-        if (!(await fs.stat(`${cwd}/debug.log`)).size) return;
-        info(`${data.event} ${chalk.magenta(data.relative)}, truncate debug.log`);
-        await fs.truncate(`${cwd}/debug.log`);
-      })
-    );
-
-  return cleaner;
+    .on('error', error => console.log('watch error:', error))
+    .on('all', async (event, file) => {
+      if (event !== 'change') return;
+      if (!(await fs.stat(`${cwd}/debug.log`)).size) return;
+      info(`${event} ${chalk.magenta(file)}, truncate debug.log`);
+      await fs.truncate(`${cwd}/debug.log`);
+    });
 
   /**
    * Handle debug.log file change

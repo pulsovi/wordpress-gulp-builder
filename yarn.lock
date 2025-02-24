@@ -131,28 +131,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/gulp-watch@npm:4.1.39":
-  version: 4.1.39
-  resolution: "@types/gulp-watch@npm:4.1.39"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/vinyl": "npm:*"
-    "@types/vinyl-fs": "npm:*"
-  checksum: 10/3a35f8d7c5d52ba5849c17efc5a9236ba1dfdf23f17fbb386fe6ad6c8c016834631d2bf08e04621367294b0e06a4c50d8f29e9cceb5cd56ce63536bb9e20d68a
-  languageName: node
-  linkType: hard
-
-"@types/gulp-watch@patch:@types/gulp-watch@npm%3A4.1.39#~/.yarn/patches/@types-gulp-watch-npm-4.1.39-4c3e18bf37.patch":
-  version: 4.1.39
-  resolution: "@types/gulp-watch@patch:@types/gulp-watch@npm%3A4.1.39#~/.yarn/patches/@types-gulp-watch-npm-4.1.39-4c3e18bf37.patch::version=4.1.39&hash=f3364e"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/vinyl": "npm:*"
-    "@types/vinyl-fs": "npm:*"
-  checksum: 10/26fc725a8dd6ddb9d57c2867e3bc0af46e6e967b4a5f8524e5f995a0ecddff4bb6559b3fd0793ae962fcd8f8d97bf421dc0fc0b67d59d0f127d6b0a5f2a763e3
-  languageName: node
-  linkType: hard
-
 "@types/gulp@npm:^4.0.13":
   version: 4.0.13
   resolution: "@types/gulp@npm:4.0.13"
@@ -4978,7 +4956,6 @@ __metadata:
   dependencies:
     "@types/fs-extra": "npm:^11"
     "@types/gulp": "npm:^4.0.13"
-    "@types/gulp-watch": "npm:^4.1.39"
     "@types/inquirer": "npm:^9.0.3"
     "@types/node": "npm:^16"
     axios: "npm:^1.4.0"

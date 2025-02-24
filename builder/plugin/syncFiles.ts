@@ -154,7 +154,8 @@ function pluginWatchSimpleFiles () {
 
 /** Watch for online compiled files and copy them here */
 function pluginWatchOnlineCompiledFiles () {
-  const cwd = `${getConfig().server.root}/wp-content/plugins/`;
+  const base = `${getConfig().server.root}/wp-content/`;
+  const cwd = `${base}plugins/`;
   const watcher = chokidar.watch([], {
     cwd,
     ignoreInitial: true,
@@ -171,7 +172,7 @@ function pluginWatchOnlineCompiledFiles () {
 
   watcher.on('all', async (event, path, stats) => {
     if (stats?.isFile()) {
-      stream.push(Object.assign(await vinylFile(path, { cwd, base: 'plugins' }), {event}));
+      stream.push(Object.assign(await vinylFile(path, { cwd, base }), {event}));
     }
   });
 

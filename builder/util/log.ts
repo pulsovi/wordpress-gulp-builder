@@ -3,6 +3,7 @@ import Stream from 'stream';
 import chalk from 'chalk';
 import fancyLog from 'fancy-log';
 import type Vinyl from 'vinyl';
+import lead from 'lead';
 
 export function log (prefix?: string, transformer?: (data: Vinyl) => string): Stream.Transform;
 export function log (transformer: (data: Vinyl) => string): Stream.Transform;
@@ -15,14 +16,22 @@ export function log (
     prefix = '';
   }
 
-  return new Stream.Transform({
+  const stream = new Stream.Transform({
     objectMode: true,
     transform (data: Vinyl, _encoding, cb) {
-      if (prefix) info(prefix, transformer(data));
-      else info(transformer(data));
-      cb(null, data);
+      try {
+        if (prefix) info(prefix, transformer(data));
+        else info(transformer(data));
+        this.push(data);
+      } catch (error) {
+        cb(error);
+        return;
+      }
+      cb();
     }
   });
+
+  return lead(stream);
 }
 
 export function logMove (prefix?: string) {

@@ -2768,6 +2768,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lead@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "lead@npm:4.0.0"
+  checksum: 10/7117297c29b94e4846822e5ae0a25780af834586c0862b89ff899e44547f4f742d67801f19838b34611d36eec44868604c55525e12d2a1fb0c9496a9792ca396
+  languageName: node
+  linkType: hard
+
 "liftoff@npm:^3.1.0":
   version: 3.1.0
   resolution: "liftoff@npm:3.1.0"
@@ -4971,6 +4978,7 @@ __metadata:
     gulp-rename: "npm:^2.0.0"
     gulp-zip: "npm:^5.1.0"
     inquirer: "npm:^8"
+    lead: "npm:^4.0.0"
     mysql2: "npm:^3.2.4"
     prompt-sync: "npm:^4.2.0"
     pumpify: "npm:^2.0.1"

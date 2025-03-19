@@ -1,10 +1,12 @@
 import Stream from 'stream';
 
+import lead from 'lead';
+
 /**
  * @param {(Vinyl) => void} action Callback who get the vinyl data and perform synchronous action
  */
 export function doAction (action) {
-  return new Stream.Transform({
+  return lead(new Stream.Transform({
     objectMode: true,
     async transform (data, _encoding, cb) {
       try {
@@ -15,5 +17,5 @@ export function doAction (action) {
       }
       cb(null, data);
     }
-  });
+  }));
 }

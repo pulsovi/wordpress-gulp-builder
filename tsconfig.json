@@ -13,5 +13,5 @@
     "strictNullChecks": true,
     "target": "ES2022"
   },
-  "include": ["gulpfile.ts", "builder/**/*.ts"]
+  "include": ["gulpfile.ts", "global.d.ts", "builder/**/*.ts"]
 }

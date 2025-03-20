@@ -1,16 +1,14 @@
-import { pipeline, Readable, Transform } from 'node:stream';
+import { pipeline, Transform } from 'node:stream';
 
 import chalk from 'chalk';
 import gulp, { parallel } from 'gulp'; const { dest } = gulp;
 import { watch } from 'chokidar';
 import type Vinyl from 'vinyl';
-import { vinylFile } from 'vinyl-file';
 
 import { getConfig } from '../util/config.js';
 import { fs } from '../util/fs.js';
 import { info } from '../util/log.js';
 import { vinylFilter } from '../util/vinylFilter.js';
-import { trash } from '../util/trash.js';
 import FSWatcherToStream from '../util/FSWatcherToStream.js';
 
 /**
@@ -18,11 +16,11 @@ import FSWatcherToStream from '../util/FSWatcherToStream.js';
  * - mirror it in cwd
  * - clean it when the plugin code change
  */
-export function bindDebugLog () {
+export function bindDebugLog (cb) {
   return parallel(
     watcher,
     cleaner,
-  );
+  )(cb);
 }
 
 /**
@@ -44,6 +42,7 @@ function watcher () {
     dest('.'),
   );
 }
+watcher.displayName = 'bindDebugLog_watcher';
 
 /**
  * Return a stream.Transform to handle debug.log file change
@@ -92,3 +91,4 @@ function cleaner () {
       await fs.truncate(`${cwd}/debug.log`);
     });
 }
+cleaner.displayName = 'bindDebugLog_cleaner';

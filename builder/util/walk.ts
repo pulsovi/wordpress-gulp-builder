@@ -9,8 +9,12 @@ type Path = string;
 
 
 type AsyncMatchFunction = (val: string, stats?: Stats) => Promise<boolean>;
-type FSWalkerOptions = Omit<ChokidarOptions, 'ignored'> & {
+export type FSWalkerOptions = Omit<ChokidarOptions, 'ignored'> & {
   base?: string;
+
+  /**
+   * If function, it returns true to ignore and false to keep a path
+   */
   ignored?: Matcher | AsyncMatchFunction | (Matcher | AsyncMatchFunction)[]
 };
 
@@ -47,6 +51,9 @@ class FSWalker extends Readable {
       ...options,
       ignored: arrify(options.ignored)
     }
+    this.opts.cwd = npath.resolve(this.opts.cwd ?? process.cwd());
+    if (this.opts.base)
+      this.opts.base = npath.resolve(process.cwd(), this.opts.base);
   }
 
   add (paths: Path | Path[]) {
@@ -79,14 +86,18 @@ class FSWalker extends Readable {
   }
 
   private async process (path: Path) {
-    if (await this.isIgnored(path)) return;
+    const relativePath = this.opts.base ?
+      npath.relative(this.opts.base, path) :
+      npath.relative(process.cwd(), path);
+
+    if (await this.isIgnored(relativePath)) return;
 
     const stats = await fs.stat(path);
-    if (await this.isIgnored(path, stats)) return;
+    if (await this.isIgnored(relativePath, stats)) return;
 
     const isDirectory = stats.isDirectory();
-    const { base } = this.opts;
-    const opts: VinylOptions = Object.assign({}, base ? {base} : {});
+    const { base, cwd } = this.opts;
+    const opts: VinylOptions = Object.assign({}, base ? {base} : {}, cwd ? {cwd} : {});
     if (isDirectory) opts.read = false;
 
     const vinyl = await vinylFile(path, opts);
@@ -99,11 +110,12 @@ class FSWalker extends Readable {
   }
 
   async isIgnored (...args: [path: Path, stats?: Stats]) {
-    const [path] = args;
+    let [path, stats] = args;
+    path = path.replace(/\\/gu, '/');
     for (const matcher of this.opts.ignored) {
       if (typeof matcher === 'string') return matcher === path;
       if (matcher instanceof RegExp) return matcher.test(path);
-      if (typeof matcher === 'function') return await matcher(...args)
+      if (typeof matcher === 'function') return await matcher(path, stats);
       if (matcher.recursive) return path.startsWith(matcher.path);
       return path === matcher.path;
     }

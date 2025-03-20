@@ -15,7 +15,7 @@ export async function sinceUnreleased (cb) {
   await Promise.all(items.map(async item => {
     const version = await item.getVersion();
     const directory = item.getDir();
-    const stream = src(`${directory}/**`, { base: '.' })
+    const stream = src([`${directory}/**`, '!vendor/**', '!node_modules/**', '!coverage/**'], { base: '.' })
     .pipe(mapSinceUnreleased(version))
     .pipe(dest('.'));
     await new Promise((rs, rj) => {

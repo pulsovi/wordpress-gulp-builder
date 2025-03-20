@@ -16,7 +16,7 @@ import { pluginGetVersion } from './getVersion.js';
 import { pluginProcessDoc } from './processDoc.js';
 import { pluginPublishVersion } from './publishVersion.js';
 import { walk } from '../util/walk.js';
-import { vendorIgnoreFilter } from './vendorIgnoreFilter.js';
+import { pluginIgnoreFilter } from './ignoreFilter.js';
 
 
 /** return stream.Writable which get plugins root folder as Vinyl and build them */
@@ -48,7 +48,7 @@ function pluginBuildTask (pluginName, version) {
     walk(`${pluginName}`, {
       cwd: 'src/plugins',
       base: 'src/plugins',
-      ignored: vendorIgnoreFilter(pluginName),
+      ignored: pluginIgnoreFilter(pluginName),
     }),
     pluginProcessDoc(),
     zip(zipFile),

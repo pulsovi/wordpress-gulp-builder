@@ -2,15 +2,19 @@ import npath from 'node:path';
 
 import fs, { type Stats } from 'fs-extra';
 
-export function vendorIgnoreFilter (pluginName) {
-  const deps = getDeps(pluginName);
+const filters: Record<string, ReturnType<typeof pluginIgnoreFilter>> = {};
+export function pluginsIgnoreFilter (file: string, stats?: Stats): boolean {
+  const parts = file.split('/');
+  const pluginName = parts.shift();
+  if (!pluginName) return false;
+  const filter = filters[pluginName] ?? (filters[pluginName] = pluginIgnoreFilter(pluginName));
+  return filter(parts.join('/'), stats);
+}
 
-  return async (file: string, stats?: Stats): Promise<boolean> => {
-    if (file.includes('stripe')) {
-      console.log('vendorIgnoreFilter', {file, deps: await deps, pluginName});
-      console.log(new Error('stack'));
-      process.exit();
-    }
+export function pluginIgnoreFilter (pluginName: string) {
+  const dependencies = getDeps(pluginName);
+
+  return (file: string, stats?: Stats): boolean => {
     // normalize path
     let path = file.replace(/\\/gu, '/').replace(`${pluginName}/`, '');
 
@@ -19,8 +23,6 @@ export function vendorIgnoreFilter (pluginName) {
 
     // process vendor folder
     if (path.startsWith('vendor')) {
-      const dependencies = await deps;
-
       // all dependencies are dev deps
       if (!dependencies.length) return true;
 
@@ -35,11 +37,11 @@ export function vendorIgnoreFilter (pluginName) {
   };
 }
 
-async function getDeps (pluginName) {
+function getDeps (pluginName: string): string[] {
   const composerFile = npath.resolve('src/plugins', pluginName, 'composer.lock');
   try {
-    const json = await fs.readJson(composerFile);
-    return json.packages.map(pkg => pkg.name);
+    const json = fs.readJsonSync(composerFile);
+    return json.packages.map((pkg: {name: string}) => pkg.name);
   } catch (_error) {
     return [];
   }

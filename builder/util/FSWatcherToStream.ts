@@ -25,7 +25,7 @@ export default function FSWatcherToStream(
     );
 
     const vinyl = await vinylFile(path, opts);
-    stream.push(vinyl);
+    stream.push(Object.assign(vinyl, {event}));
   });
 
   return objectMix(watcher, stream);

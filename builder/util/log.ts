@@ -35,16 +35,13 @@ export function log (
 }
 
 export function logMove (prefix?: string) {
-  return new Stream.Transform({
-    objectMode: true,
-    transform (data: Vinyl, _encoding, cb) {
+  return log((data: Vinyl) => {
       const src = data.history[0];
       const dest = data.history.slice(-1)[0];
-      if ('string' === typeof prefix) info(prefix);
-      info(src.padStart(dest.length), '=>');
-      info(dest.padStart(src.length), '\n');
-      cb(null, data);
-    },
+      const prefixStr = ('string' === typeof prefix) ? `${prefix}\n` : '';
+      const from = `${src.padStart(dest.length)} =>\n`;
+      const to = `${dest.padStart(src.length)} \n`;
+      return `${prefixStr}${from}\n${to}`;
   });
 }
 

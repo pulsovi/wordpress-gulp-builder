@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type Vinyl from 'vinyl';
 
 import { getConfig } from '../util/config.js';
 import { info } from '../util/log.js';
@@ -7,12 +8,37 @@ import { pluginGetTitle } from './getTitle.js';
 import type { PluginGetTitleOptions } from './getTitle.js';
 import { pluginGetVersion } from './getVersion.js';
 import type { PluginGetVersionOptions } from './getVersion.js';
+import { Transform } from 'stream';
+import { pluginGetFile } from './getFile.js';
+import { pluginGetName } from './getName.js';
 
 type PluginPublishVersionOptions = PluginGetTitleOptions & PluginGetVersionOptions;
 
 const versions: Record<string, string> = {};
 
-/** publish given version as last version of given plugin */
+/**
+ * Return stream.Transform which input Vinyl file and
+ * - passthrough all of them
+ * - if the file is the plugin root file of a plugin, publish its version
+ */
+export function pluginVersionPublisher () {
+  return new Transform({
+    objectMode: true,
+    async transform(data: Vinyl, _encoding, cb) {
+      if (data.event && !['change', 'add'].includes(data.event)) return cb(null, data);
+      const pluginName = pluginGetName({filename: data.path, throw: false});
+      const pluginMainFile = pluginName ? pluginGetFile(pluginName) : null;
+      if (!pluginMainFile || data.path !== pluginMainFile) return cb(null, data);
+      const code = data.contents?.toString();
+      await pluginPublishVersion({name: pluginName!, code});
+      cb(null, data);
+    },
+  })
+}
+
+/**
+ * publish given version as last version of given plugin
+ */
 export async function pluginPublishVersion (options: PluginPublishVersionOptions) {
   const {publish} = getConfig();
   if (!publish?.use) return;

@@ -2,11 +2,11 @@ import { pipeline } from 'node:stream';
 
 import type Vinyl from 'vinyl';
 
-import { walk } from '../util/walk';
-import { log } from '../util/log';
-import { pluginsIgnoreFilter } from './ignoreFilter';
+import { walk } from '../util/walk.js';
+import { log } from '../util/log.js';
+import { pluginsIgnoreFilter } from './ignoreFilter.js';
 import chalk from 'chalk';
-import { pluginsSendFileToServer } from './sendFileToServer';
+import { pluginsSendFileToServer } from './sendFileToServer.js';
 
 /**
  * Gulp task: copy all files
@@ -23,5 +23,6 @@ export function pluginCopyFiles () {
     source,
     pluginsSendFileToServer(),
     log((data: Vinyl) => `plugin copy ${chalk.bgGreenBright(++count)} ${chalk.magenta(data.relative)}`),
+    error => { if (error) console.error(error); }
   );
 }

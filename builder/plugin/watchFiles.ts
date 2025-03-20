@@ -1,17 +1,17 @@
 import npath from 'node:path';
 
-import chokidar, { FSWatcher } from 'chokidar';
-import { dest, parallel } from 'gulp';
+import chokidar from 'chokidar';
+import gulp from 'gulp'; const { dest, parallel } = gulp;
 import type Vinyl from 'vinyl';
 
-import { getConfig } from '../util/config';
-import FSWatcherToStream from '../util/FSWatcherToStream';
+import { getConfig } from '../util/config.js';
+import FSWatcherToStream from '../util/FSWatcherToStream.js';
 import chalk from 'chalk';
 import { pipeline } from 'node:stream';
-import { log, logMove } from '../util';
+import { log, logMove } from '../util/log.js';
 
-import { pluginsIgnoreFilter } from './ignoreFilter';
-import { pluginsSendFileToServer } from './sendFileToServer';
+import { pluginsIgnoreFilter } from './ignoreFilter.js';
+import { pluginsSendFileToServer } from './sendFileToServer.js';
 
 /**
  * Gulp task: watch files for keeping synchronization
@@ -34,7 +34,8 @@ function watchProjectFiles () {
     FSWatcherToStream(watcher),
     log('watch'),
     pluginsSendFileToServer(),
-    logMove('watch')
+    logMove('watch'),
+    error => { if (error) console.error(error); }
   );
 }
 
@@ -57,20 +58,20 @@ function watchServerFiles () {
     ignoreInitial: false,
     ignorePermissionErrors: true,
   })
-    .on('addDir', dirname => watcher.add(compiledFilesOf(dirname)))
-    .on('unlinkDir', dirname => watcher.unwatch(compiledFilesOf(dirname)))
+    .on('addDir', dirname => { if (dirname) watcher.add(compiledFilesOf(dirname)); })
+    .on('unlinkDir', dirname => { if (dirname) watcher.unwatch(compiledFilesOf(dirname)); })
   ;
 
   return pipeline(
     FSWatcherToStream(watcher, {base: `${getConfig().server.root}/wp-content/`}),
     log((data: Vinyl & {event: string}) => `${data.event} online ${chalk.magenta(data.relative)}`),
     dest('.', { cwd: 'src' }),
+    error => { if (error) console.error(error); }
   );
 
   function compiledFilesOf (pluginDirName: string): string {
     const pluginName = npath.basename(pluginDirName);
     const files = `${pluginName}/languages`;
-    console.log('compiledFilesOf', {pluginDirName, pluginName, files});
     return files;
   }
 }

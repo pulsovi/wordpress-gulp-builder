@@ -21,4 +21,5 @@ export function pluginsSync (cb) {
  */
 function logReady (cb) {
   info(chalk.red(`READY: The ${chalk.yellow('plugins')} files are all uploaded`));
+  cb();
 }

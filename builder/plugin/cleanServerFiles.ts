@@ -21,7 +21,8 @@ export async function pluginsCleanServerFiles (taskCb) {
 
   return pipeline(
     src(sources, { base: serverPluginFolder, read: false }),
-    fileUnlinker()
+    fileUnlinker(),
+    error => { if (error) console.error(error); }
   );
 }
 // pluginsCleanServerFiles.displayName = 'pluginsCleanServerFiles';

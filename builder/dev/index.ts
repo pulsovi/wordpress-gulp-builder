@@ -1,10 +1,9 @@
-import gulp from 'gulp'; const { parallel, series } = gulp;
+import gulp from 'gulp'; const { parallel } = gulp;
 
 import { snippetsSync } from '../snippet/sync.js';
+import { pluginsSync } from '../plugin/sync.js';
 
 import { bindDebugLog } from './bindDebugLog.js';
-import { watchBuilderChange } from './watchBuilderChange.js';
-import { pluginsSync } from '../plugin/sync.js';
 
 export const dev = parallel(
   //watchBuilderChange,

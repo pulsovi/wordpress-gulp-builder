@@ -1,7 +1,7 @@
 import { pipeline, Transform } from 'node:stream';
 
 import chalk from 'chalk';
-import gulp, { parallel } from 'gulp'; const { dest } = gulp;
+import gulp from 'gulp'; const { dest, parallel } = gulp;
 import { watch } from 'chokidar';
 import type Vinyl from 'vinyl';
 
@@ -40,6 +40,7 @@ function watcher () {
     vinylFilter((data: Vinyl) => Boolean(data.stat!.size)),
     onChange(),
     dest('.'),
+    error => { if (error) console.error(error); }
   );
 }
 watcher.displayName = 'bindDebugLog_watcher';

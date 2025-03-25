@@ -1,4 +1,4 @@
-
+import npath from 'node:path';
 import gulp from 'gulp'; const { dest } = gulp;
 import pumpify from 'pumpify';
 
@@ -13,11 +13,12 @@ import { pluginVersionPublisher } from './publishVersion.js';
  * Return stream.Duplex which input Vinyl file from project and copy them to the server FS
  */
 export function pluginsSendFileToServer () {
+  const cwd = `${getConfig().server.root}/wp-content/plugins`;
   return pumpify.obj(
     pluginProcessDoc(),
     pluginProcessCode(),
     pluginVersionPublisher(),
-    unlinkDest('.', { cwd: `${getConfig().server.root}/wp-content/plugins` }),
-    dest('.', { cwd: `${getConfig().server.root}/wp-content/plugins`, overwrite: true }),
+    unlinkDest('.', { cwd }),
+    dest('.', { cwd, overwrite: true }),
   );
 }

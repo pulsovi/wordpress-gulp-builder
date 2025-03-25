@@ -3,7 +3,7 @@ import { pipeline } from 'node:stream';
 import type Vinyl from 'vinyl';
 
 import { walk } from '../util/walk.js';
-import { log } from '../util/log.js';
+import { log, logMove } from '../util/log.js';
 import { pluginsIgnoreFilter } from './ignoreFilter.js';
 import chalk from 'chalk';
 import { pluginsSendFileToServer } from './sendFileToServer.js';
@@ -14,7 +14,7 @@ import { pluginsSendFileToServer } from './sendFileToServer.js';
 export function pluginCopyFiles () {
   let count = 0;
   const source = walk('.', {
-    ignored: pluginsIgnoreFilter,
+    ignored: pluginsIgnoreFilter(),
     cwd: 'src/plugins',
     base: 'src/plugins',
   });

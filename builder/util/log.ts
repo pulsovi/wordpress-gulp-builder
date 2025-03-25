@@ -38,10 +38,13 @@ export function logMove (prefix?: string) {
   return log((data: Vinyl) => {
       const src = data.history[0];
       const dest = data.history.slice(-1)[0];
-      const prefixStr = ('string' === typeof prefix) ? `${prefix}\n` : '';
-      const from = `${src.padStart(dest.length)} =>\n`;
-      const to = `${dest.padStart(src.length)} \n`;
-      return `${prefixStr}${from}\n${to}`;
+      const prefixStr = prefix ?
+        (data.event ? `${prefix} ${data.event}\n` : `${prefix}\n`) :
+        (data.event ? `${data.event}\n` : '');
+      //const relative = chalk.magenta(data.relative.padStart(dest.length).padStart(src.length));
+      const from = `${chalk.red(src.padStart(dest.length))} =>`;
+      const to = `${chalk.green(dest.padStart(src.length))}`;
+      return `${prefixStr}${from}\n${to}\n`;
   });
 }
 

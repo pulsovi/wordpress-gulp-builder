@@ -24,17 +24,17 @@ export function pluginWatchFiles (cb) {
 }
 
 function watchProjectFiles () {
-  const watcher = chokidar.watch('./plugins', {
-    cwd: 'src',
+  const watcher = chokidar.watch('.', {
+    cwd: 'src/plugins',
     ignoreInitial: true,
     ignorePermissionErrors: true,
-    ignored: pluginsIgnoreFilter
+    ignored: pluginsIgnoreFilter({ base: 'src/plugins' })
   });
+  watcher.on('change', file => {console.log('change', file);});
   return pipeline(
     FSWatcherToStream(watcher),
-    log('watch'),
     pluginsSendFileToServer(),
-    logMove('watch'),
+    log('watch'),
     error => { if (error) console.error(error); }
   );
 }

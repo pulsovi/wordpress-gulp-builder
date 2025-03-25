@@ -2,24 +2,33 @@ import npath from 'node:path';
 
 import fs, { type Stats } from 'fs-extra';
 
+import { pluginGetFile } from './getFile.js';
+
 const filters: Record<string, ReturnType<typeof pluginIgnoreFilter>> = {};
-export function pluginsIgnoreFilter (file: string, stats?: Stats): boolean {
-  const parts = file.split('/');
-  const pluginName = parts.shift();
-  if (!pluginName) return false;
-  const filter = filters[pluginName] ?? (filters[pluginName] = pluginIgnoreFilter(pluginName));
-  return filter(parts.join('/'), stats);
+export function pluginsIgnoreFilter (options: { base?: string } = {}) {
+  return (file: string, stats?: Stats): boolean => {
+    const parts = options.base ?
+      npath.relative(options.base, file).split(npath.sep) :
+      file.split('/');
+    const pluginName = parts.shift();
+    if (!pluginName) return false;
+    const filter = filters[pluginName] ?? (filters[pluginName] = pluginIgnoreFilter(pluginName));
+    const result = filter(parts.join('/'), stats);
+    return result;
+  }
 }
 
 export function pluginIgnoreFilter (pluginName: string) {
   const dependencies = getDeps(pluginName);
+
+  if (!fs.existsSync(pluginGetFile(pluginName))) return () => true;
 
   return (file: string, stats?: Stats): boolean => {
     // normalize path
     let path = file.replace(/\\/gu, '/').replace(`${pluginName}/`, '');
 
     // exclude node_modules & coverage
-    if (/^(node_modules|coverage)/u.test(path)) return true;
+    if (/^(node_modules|coverage|tests)/u.test(path)) return true;
 
     // process vendor folder
     if (path.startsWith('vendor')) {

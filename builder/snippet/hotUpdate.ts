@@ -24,13 +24,13 @@ export function snippetHotUpdate () {
           snippetGetDocFile(name).replace(/.md$/u, '.html'),
         ];
         if (!snippetFiles.includes(data.path)) {
-          info(chalk.yellow('SNIPPET HOT UPDATE unmanaged file'), data.path);
+          info(chalk.yellow(`SNIPPET HOT UPDATE ${chalk.red('unmanaged file')}`), data.path);
           return cb();
         }
 
         // Unknown event
         if (!['add', 'change'].includes(data.event)) {
-          info(chalk.yellow('SNIPPET HOT UPDATE unmanaged event'), data.event, 'on', chalk.blue(data.path));
+          info(`${chalk.yellow(`SNIPPET HOT UPDATE ${chalk.red('unmanaged event')}`)} ${data.event} on ${chalk.blue(data.path)}`);
           return cb();
         }
 

@@ -22,8 +22,12 @@ export default function FSWatcherToStream(
       isDirectory ? { read: false } : {},
     );
 
-    const vinyl = await vinylFile(path, opts);
-    stream.push(Object.assign(vinyl, {event}));
+    try {
+      const vinyl = await vinylFile(path, opts);
+      stream.push(Object.assign(vinyl, {event}));
+    } catch (error) {
+      console.log(error);
+    }
   });
 
   return stream;

@@ -19,8 +19,12 @@ export function unlinkDest (outFolder: string, opt: { cwd: string }) {
       case 'unlink':
         await fs.rm(path.join(opt?.cwd ?? '.', outFolder, data.relative));
         break;
+      case 'addDir':
+        break;
       default:
-        cb(new Error('ERROR unlinkDest : Unknown event' + data.event));
+        console.log('ERROR unlinkDest : Unknown event ' + data.event);
+        cb(new Error('ERROR unlinkDest : Unknown event ' + data.event));
+        return;
     }
     cb?.();
   }

@@ -12,14 +12,27 @@ import { snippetGetScope } from './getScope.js';
 import { snippetGetTitle } from './getTitle.js';
 import { snippetGetVersion } from './getVersion.js';
 import { snippetPublishVersion } from './publishVersion.js';
+import { log } from '../util/log.js';
+import { escapeRegExp } from '../util/regex.js';
 
 /** Get snippet names and build them */
-export function snippetBuild () {
+export function snippetBuild() {
   return new Stream.Transform({
     objectMode: true,
-    async transform (data: Vinyl, _encoding, cb) {
+    async transform(data: Vinyl, _encoding, cb) {
       try {
         const snippetName = snippetGetName(data.path);
+
+        if (
+          process.argv.some(arg => arg.startsWith('--plugin') || arg.startsWith('--snippet'))
+          && !process.argv.some(
+            arg => new RegExp(`^--snippet=(['"]?)${escapeRegExp(snippetName)}\\1$`).test(arg)
+          )
+        ) {
+          log(`filtered build not include "${snippetName}"`);
+          cb(); return;
+        }
+
         const code = await snippetGetCode(snippetName, false);
         const version = await snippetGetVersion({ code, isRequired: true });
         const doc = await snippetGetDoc(snippetName);

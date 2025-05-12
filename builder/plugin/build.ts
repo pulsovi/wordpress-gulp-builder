@@ -17,14 +17,24 @@ import { pluginProcessDoc } from './processDoc.js';
 import { pluginPublishVersion } from './publishVersion.js';
 import { walk } from '../util/walk.js';
 import { pluginIgnoreFilter } from './ignoreFilter.js';
+import { escapeRegExp } from '../util/regex.js';
 
 
 /** return stream.Writable which get plugins root folder as Vinyl and build them */
-export function pluginBuild () {
+export function pluginBuild() {
   return new Stream.Writable({
     objectMode: true,
-    async write (data: Vinyl, _encoding, cb) {
+    async write(data: Vinyl, _encoding, cb) {
       const pluginName = data.basename;
+      if (
+        process.argv.some(arg => arg.startsWith('--plugin') || arg.startsWith('--snippet'))
+        && !process.argv.some(
+          arg => new RegExp(`^--plugin=(['"]?)${escapeRegExp(pluginName)}\\1$`).test(arg)
+        )
+      ) {
+        log(`filtered build not include "${pluginName}"`);
+        cb(); return;
+      }
       if (!await fs.exists(pluginGetFile(pluginName))) {
         log(`Unable to find the main file for the plugin "${pluginName}"`);
         cb();
@@ -39,7 +49,7 @@ export function pluginBuild () {
 }
 
 /** Gulp task: build given plugin by name and version */
-function pluginBuildTask (pluginName, version) {
+function pluginBuildTask(pluginName, version) {
   const zipFile = `${pluginName}/${pluginName}_${version}.zip`;
   if (fs.existsSync(npath.join('src/plugins', zipFile))) {
     throw new Error(`The version "${version}" of the plugin "${pluginName}" already built.`)

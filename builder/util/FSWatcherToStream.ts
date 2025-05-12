@@ -6,7 +6,7 @@ import { vinylFile, type Options as VinylOptions } from 'vinyl-file';
 import fs from 'fs-extra';
 
 export default function FSWatcherToStream(
-  watcher: FSWatcher, options: {base?: string} = {}
+  watcher: FSWatcher, options: { base?: string } = {}
 ): Readable {
   const stream = new Readable({ objectMode: true, read() {} });
   watcher.on('all', async (event: string, path: string) => {
@@ -24,7 +24,7 @@ export default function FSWatcherToStream(
 
     try {
       const vinyl = await vinylFile(path, opts);
-      stream.push(Object.assign(vinyl, {event}));
+      stream.push(Object.assign(vinyl, { event }));
     } catch (error) {
       console.log(error);
     }

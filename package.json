@@ -6,6 +6,7 @@
   },
   "scripts": {
     "build": "tsc && cp builder/util/github-model.html dist/builder/util",
+    "dev": "cp builder/util/github-model.html dist/builder/util && tsc --watch",
     "postinstall": "tsc && cp builder/util/github-model.html dist/builder/util"
   },
   "dependencies": {

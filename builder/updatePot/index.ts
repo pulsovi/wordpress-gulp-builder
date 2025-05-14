@@ -33,7 +33,7 @@ async function updatePotFileTask (pluginName:string, potFile: Vinyl, cb) {
   const pot = new PotFile(potFile);
   await new Promise(rs => {
     pipelineFollowError(
-      src(`${pluginName}/**/*.tsx`, { cwd: 'src/plugins', base: `src/plugins/${pluginName}` }),
+      src([`${pluginName}/**/*.tsx`, `!${pluginName}/vendor/**/*`], { cwd: 'src/plugins', base: `src/plugins/${pluginName}` }),
       tsxToPot(pot)
     ).on('close', rs);
   });

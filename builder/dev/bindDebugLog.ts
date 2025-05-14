@@ -57,7 +57,7 @@ function onChange (): Transform {
         const content: string = data.contents.toString()
           .replace(/\r\n|\r/gu, '\n')        // Windows and Mac LE
           .replace(/\n\n+(?!\[|$)/gu, '\n')  // Multiple LF inside one stack
-          .replace(/(?<!\n)\n\[/gu, '\n\n[') // New stack not preceded by an empty line
+          .replace(/(?<!\n)(\n\[[^\]]*\])(?!  | Automatic updates c| PHP +\d| PHP Stack trace)/gu, '\n$1') // New stack not preceded by an empty line
 
         const index = content.lastIndexOf('\n\n[');
         const start = ~index ? index + 2 : 0;

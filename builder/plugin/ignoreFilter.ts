@@ -4,9 +4,15 @@ import fs, { type Stats } from 'fs-extra';
 
 import { pluginGetFile } from './getFile.js';
 
+interface PluginsIgnoreFilterOptions {
+  base?: string;
+  fileExcludeExts?: string[];
+}
+
 const filters: Record<string, ReturnType<typeof pluginIgnoreFilter>> = {};
-export function pluginsIgnoreFilter (options: { base?: string } = {}) {
+export function pluginsIgnoreFilter (options: PluginsIgnoreFilterOptions = {}) {
   return (file: string, stats?: Stats): boolean => {
+    if (stats?.isFile() && options.fileExcludeExts?.some(ext => file.endsWith(ext))) return true;
     const parts = options.base ?
       npath.relative(options.base, file).split(npath.sep) :
       file.split('/');

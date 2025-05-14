@@ -24,11 +24,12 @@ export function pluginWatchFiles (cb) {
 }
 
 function watchProjectFiles () {
+  const fileExcludeExts = ['mo', 'po', 'json'];
   const watcher = chokidar.watch('.', {
     cwd: 'src/plugins',
     ignoreInitial: true,
     ignorePermissionErrors: true,
-    ignored: pluginsIgnoreFilter({ base: 'src/plugins' })
+    ignored: pluginsIgnoreFilter({ base: 'src/plugins', fileExcludeExts }),
   });
   watcher.on('change', file => {console.log('change', file);});
   return pipeline(

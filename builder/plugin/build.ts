@@ -7,7 +7,7 @@ import zip from 'gulp-zip';
 import type Vinyl from 'vinyl';
 
 import { fs } from '../util/fs.js';
-import { log } from '../util/log.js';
+import { info, log } from '../util/log.js';
 import { pipelineFollowError } from '../util/pipelineFollowError.js';
 import { doAction } from '../util/doAction.js';
 
@@ -18,7 +18,7 @@ import { pluginPublishVersion } from './publishVersion.js';
 import { walk } from '../util/walk.js';
 import { pluginIgnoreFilter } from './ignoreFilter.js';
 import { escapeRegExp } from '../util/regex.js';
-
+import { confirm } from '../util/confirm.js';
 
 /** return stream.Writable which get plugins root folder as Vinyl and build them */
 export function pluginBuild() {
@@ -42,17 +42,21 @@ export function pluginBuild() {
       }
       const version = await pluginGetVersion({ async: true, name: pluginName, isRequired: true });
       const displayName = `pluginBuild_${pluginName}`;
-      const task = Object.assign(() => pluginBuildTask(pluginName, version), { displayName });
+      const task = Object.assign(cb => pluginBuildTask(pluginName, version, cb), { displayName });
       series(task)(cb);
     }
   });
 }
 
 /** Gulp task: build given plugin by name and version */
-function pluginBuildTask(pluginName, version) {
+async function pluginBuildTask(pluginName: string, version: string, cb: (error?: Error) => void) {
   const zipFile = `${pluginName}/${pluginName}_${version}.zip`;
-  if (fs.existsSync(npath.join('src/plugins', zipFile))) {
-    throw new Error(`The version "${version}" of the plugin "${pluginName}" already built.`)
+  if (await fs.exists(npath.join('build/plugins', zipFile))) {
+    const override = await confirm(chalk.redBright(`The version ${chalk.yellow(version)} of the plugin ${chalk.blue(pluginName)} already built. Override ?`));
+    if (!override) {
+      info(chalk.redBright(`pluginBuildTask CANCELED for ${chalk.blue(pluginName)} v${chalk.yellow(version)}`));
+      return cb();
+    }
   }
   return pipelineFollowError(
     walk(`${pluginName}`, {

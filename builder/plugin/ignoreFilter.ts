@@ -42,6 +42,7 @@ export function pluginIgnoreFilter (pluginName: string) {
       if (!dependencies.length) return true;
 
       path = path.replace(/^vendor\/?/u, '');
+      if (path.startsWith('composer')) return false;
       if (!stats || !path.includes('/')) return false;
       if (stats.isDirectory())
         return !dependencies.some(item => path.startsWith(item) || item.startsWith(path));

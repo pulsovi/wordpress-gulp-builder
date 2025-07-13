@@ -5,6 +5,9 @@ import { Stream } from "stream";
 import type Vinyl from "vinyl";
 import Snippet from "../snippet/Snippet.js";
 import Plugin from "../plugin/Plugin.js";
+import { walk } from "../util/walk.js";
+import { pluginIgnoreFilter } from "../plugin/ignoreFilter.js";
+import { log } from "../util/log.js";
 
 const { dest, src } = gulp;
 
@@ -15,9 +18,13 @@ export async function sinceUnreleased (cb) {
   await Promise.all(items.map(async item => {
     const version = await item.getVersion();
     const directory = item.getDir();
-    const stream = src([`${directory}/**`, '!vendor/**', '!node_modules/**', '!coverage/**'], { base: '.' })
+    const stream = walk(directory, {
+      base: 'src/plugins',
+      ignored: pluginIgnoreFilter(item.name),
+    })
+    .pipe(log())
     .pipe(mapSinceUnreleased(version))
-    .pipe(dest('.'));
+    .pipe(dest('src/plugins'));
     await new Promise((rs, rj) => {
       stream.on('end', rs);
       stream.on('error', rj);

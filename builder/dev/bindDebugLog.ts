@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { pipeline, Transform } from 'node:stream';
 
 import chalk from 'chalk';
@@ -54,10 +55,21 @@ function onChange (): Transform {
     async transform (data: Vinyl, _encoding, cb) {
       try {
         if ('function' !== typeof data.contents?.toString) return;
-        const content: string = data.contents.toString()
-          .replace(/\r\n|\r/gu, '\n')        // Windows and Mac LE
-          .replace(/\n\n+(?!\[|$)/gu, '\n')  // Multiple LF inside one stack
-          .replace(/(?<!\n)(\n\[[^\]]*\])(?!  | Automatic updates c| PHP +\d| PHP Stack trace)/gu, '\n$1') // New stack not preceded by an empty line
+        let content: string = data.contents.toString()
+          // Windows and Mac LE
+          .replace(/\r\n|\r/gu, '\n')
+          // Multiple LF inside one stack
+          .replace(/\n\n+(?!\[|$)/gu, '\n')
+          // New stack not preceded by an empty line
+          .replace(/(?<!\n)(\n\[[^\]]*\])(?!  | Automatic updates c| PHP +\d| PHP Stack trace)/gu, '\n$1')
+          // replace backslashes to forward slashes
+          .replace(/\\/gu, '/');
+
+        const srcRoot = path.join(process.cwd(), 'src/plugins').replace(/\\/gu, '/');
+        const dstRoot = path.join(getConfig().server.root, 'wp-content/plugins').replace(/\\/gu, '/');
+        while (content.includes(dstRoot)) {
+          content = content.replace(dstRoot, srcRoot);
+        }
 
         const index = content.lastIndexOf('\n\n[');
         const start = ~index ? index + 2 : 0;

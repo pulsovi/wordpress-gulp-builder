@@ -34,14 +34,14 @@ export function pluginIgnoreFilter (pluginName: string) {
     let path = file.replace(/\\/gu, '/').replace(`${pluginName}/`, '');
 
     // exclude node_modules & coverage
-    if (/^(node_modules|coverage|tests)/u.test(path)) return true;
+    if (/^(node_modules|coverage|tests)\//u.test(path)) return true;
 
     // process vendor folder
-    if (path.startsWith('vendor')) {
+    if (path.startsWith('vendor/')) {
       // all dependencies are dev deps
       if (!dependencies.length) return true;
 
-      path = path.replace(/^vendor\/?/u, '');
+      path = path.replace(/^vendor\//u, '');
       if (path.startsWith('composer')) return false;
       if (!stats || !path.includes('/')) return false;
       if (stats.isDirectory())

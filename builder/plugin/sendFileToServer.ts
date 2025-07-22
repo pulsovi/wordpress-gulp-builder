@@ -1,12 +1,13 @@
-import npath from 'node:path';
-import gulp from 'gulp'; const { dest } = gulp;
+import gulp from 'gulp';
 import pumpify from 'pumpify';
+const { dest } = gulp;
 
+import { changeType } from '../util/changeType.js';
 import { getConfig } from '../util/config.js';
 import { unlinkDest } from '../util/unlinkDest.js';
 
-import { pluginProcessDoc } from './processDoc.js';
 import { pluginProcessCode } from './processCode.js';
+import { pluginProcessDoc } from './processDoc.js';
 import { pluginVersionPublisher } from './publishVersion.js';
 
 /**
@@ -19,6 +20,7 @@ export function pluginsSendFileToServer () {
     pluginProcessCode(),
     pluginVersionPublisher(),
     unlinkDest('.', { cwd }),
+    changeType('.', cwd),
     dest('.', { cwd, overwrite: true }),
   );
 }

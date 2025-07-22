@@ -3,9 +3,11 @@ import Stream from 'stream';
 import lead from 'lead';
 
 /**
- * @param {(Vinyl) => void} action Callback who get the vinyl data and perform synchronous action
+ * Return a stream.Transform which perform action on data and pass the data to the next stream
+
+ * @param {(data: any) => void|Promise<void>} action Callback who get the data and perform synchronous action
  */
-export function doAction (action) {
+export function doAction <T>(action: (data: T) => void|Promise<void>) {
   return lead(new Stream.Transform({
     objectMode: true,
     async transform (data, _encoding, cb) {

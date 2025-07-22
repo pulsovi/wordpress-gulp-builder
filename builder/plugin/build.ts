@@ -19,6 +19,7 @@ import { walk } from '../util/walk.js';
 import { pluginIgnoreFilter } from './ignoreFilter.js';
 import { escapeRegExp } from '../util/regex.js';
 import { confirm } from '../util/confirm.js';
+import { gitGetBranch } from '../util/git.js';
 
 /** return stream.Writable which get plugins root folder as Vinyl and build them */
 export function pluginBuild() {
@@ -50,7 +51,8 @@ export function pluginBuild() {
 
 /** Gulp task: build given plugin by name and version */
 async function pluginBuildTask(pluginName: string, version: string, cb: (error?: Error) => void) {
-  const zipFile = `${pluginName}/${pluginName}_${version}.zip`;
+  const gitBranch = await gitGetBranch();
+  const zipFile = `${pluginName}/${gitBranch}/${pluginName}_${version}.zip`;
   if (await fs.exists(npath.join('build/plugins', zipFile))) {
     const override = await confirm(chalk.redBright(`The version ${chalk.yellow(version)} of the plugin ${chalk.blue(pluginName)} already built. Override ?`));
     if (!override) {
@@ -68,6 +70,8 @@ async function pluginBuildTask(pluginName: string, version: string, cb: (error?:
     zip(zipFile),
     dest('build/plugins'),
     log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`),
-    doAction(async () => { await pluginPublishVersion({ name: pluginName, version }); }),
+    doAction(async () => {
+      if (gitBranch === 'master') await pluginPublishVersion({ name: pluginName, version });
+    }),
   );
 }

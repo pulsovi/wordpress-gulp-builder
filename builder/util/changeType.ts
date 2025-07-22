@@ -2,8 +2,8 @@ import npath from "node:path";
 
 import type Vinyl from "vinyl";
 
-import { doAction } from "./doAction";
-import { fs } from "./fs";
+import { doAction } from "./doAction.js";
+import { fs } from "./fs.js";
 
 /**
  * Gulp action which remove the file if the file type is different on the server

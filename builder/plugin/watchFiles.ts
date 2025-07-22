@@ -36,7 +36,7 @@ function watchProjectFiles () {
     FSWatcherToStream(watcher),
     pluginsSendFileToServer(),
     log('watch'),
-    error => { if (error) console.error(error); }
+    error => { if (error) console.error('plugin/watchFiles@watchProjectFiles', 'pipeline error', error); }
   );
 }
 

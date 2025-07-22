@@ -1,7 +1,10 @@
-import path from 'path';
-import Stream from 'stream';
+import path from 'node:path';
+import Stream from 'node:stream';
+
+import chalk from 'chalk';
 
 import { fs } from './fs.js';
+import { info } from './log.js';
 
 /**
  * Return a Transform stream of Vinyl which deletes dest file when
@@ -17,7 +20,8 @@ export function unlinkDest(outFolder: string, opt: { cwd: string }) {
         this.push(data);
         break;
       case 'unlink':
-        await fs.rm(path.join(opt?.cwd ?? '.', outFolder, data.relative));
+        await fs.rm(path.join(opt?.cwd ?? '.', outFolder, data.relative))
+          .catch(error => info('util/unlinkDest error:', chalk.red(error.message)));
         break;
       case 'addDir':
         break;

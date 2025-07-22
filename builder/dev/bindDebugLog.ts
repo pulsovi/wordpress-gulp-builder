@@ -65,11 +65,7 @@ function onChange (): Transform {
           // replace backslashes to forward slashes
           .replace(/\\/gu, '/');
 
-        const srcRoot = path.join(process.cwd(), 'src/plugins').replace(/\\/gu, '/');
-        const dstRoot = path.join(getConfig().server.root, 'wp-content/plugins').replace(/\\/gu, '/');
-        while (content.includes(dstRoot)) {
-          content = content.replace(dstRoot, srcRoot);
-        }
+        content = await replacePluginsPath(content);
 
         const index = content.lastIndexOf('\n\n[');
         const start = ~index ? index + 2 : 0;
@@ -84,6 +80,27 @@ function onChange (): Transform {
       } catch (error) { cb(error); }
     }
   });
+}
+
+/**
+ * Replace path of the dev plugin in debug.log
+ *
+ * @unreleased
+ */
+async function replacePluginsPath (content: string) {
+  const plugins = (await fs.readdir('src/plugins', { withFileTypes: true }))
+    .filter(item => item.isDirectory())
+    .map(item => item.name);
+  const srcRoot = path.join(process.cwd(), 'src/plugins');
+  const dstRoot = path.join(getConfig().server.root, 'wp-content/plugins');
+  for (const plugin of plugins) {
+    const srcPlugin = path.join(srcRoot, plugin).replace(/\\/gu, '/');
+    const dstPlugin = path.join(dstRoot, plugin).replace(/\\/gu, '/');
+    while (content.includes(dstPlugin)) {
+      content = content.replace(dstPlugin, srcPlugin);
+    }
+  }
+  return content;
 }
 
 /**

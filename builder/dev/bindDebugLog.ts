@@ -62,8 +62,6 @@ function onChange (): Transform {
           .replace(/\n\n+(?!\[|$)/gu, '\n')
           // New stack not preceded by an empty line
           .replace(/(?<!\n)(\n\[[^\]]*\])(?!  | Automatic updates c| PHP +\d| PHP Stack trace)/gu, '\n$1')
-          // replace backslashes to forward slashes
-          .replace(/\\/gu, '/');
 
         content = await replacePluginsPath(content);
 
@@ -95,7 +93,7 @@ async function replacePluginsPath (content: string) {
   const dstRoot = path.join(getConfig().server.root, 'wp-content/plugins');
   for (const plugin of plugins) {
     const srcPlugin = path.join(srcRoot, plugin).replace(/\\/gu, '/');
-    const dstPlugin = path.join(dstRoot, plugin).replace(/\\/gu, '/');
+    const dstPlugin = path.join(dstRoot, plugin);
     while (content.includes(dstPlugin)) {
       content = content.replace(dstPlugin, srcPlugin);
     }

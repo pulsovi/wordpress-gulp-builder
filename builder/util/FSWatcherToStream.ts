@@ -34,7 +34,7 @@ export default function FSWatcherToStream(
       const vinyl = await vinylFile(path, opts);
       stream.push(Object.assign(vinyl, { event }));
     } catch (error) {
-      console.log('util/FSWatcherToStream error:', error);
+      console.log('util/FSWatcherToStream error:', error, {event, path, opts, realpath});
     }
   });
 

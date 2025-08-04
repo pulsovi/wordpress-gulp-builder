@@ -31,6 +31,9 @@ function fileUnlinker () {
   return new Writable({
     objectMode: true,
     async write (file: Vinyl, _encoding, cb) {
+      // if already deleted, skip
+      if (!await fs.exists(file.path)) return cb();
+      // if not in project, delete
       if (!await fs.exists(path.join('src/plugins', file.relative))) {
         if (file.isDirectory()) await fs.rm(file.path, {recursive: true});
         else await fs.unlink(file.path);

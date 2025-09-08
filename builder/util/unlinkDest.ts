@@ -15,19 +15,23 @@ export function unlinkDest(outFolder: string, opt: { cwd: string }) {
   stream._transform = async function (data, _encoding, cb) {
     switch (data.event) {
       case undefined:
-      case 'add':
-      case 'change':
+      case "add":
+      case "change":
         this.push(data);
         break;
-      case 'unlink':
-        await fs.rm(path.join(opt?.cwd ?? '.', outFolder, data.relative))
-          .catch(error => info('util/unlinkDest error:', chalk.red(error.message)));
+      case "unlink":
+      case "unlinkDir":
+        await fs
+          .rm(path.join(opt?.cwd ?? ".", outFolder, data.relative))
+          .catch((error) =>
+            info("util/unlinkDest error:", chalk.red(error.message))
+          );
         break;
-      case 'addDir':
+      case "addDir":
         break;
       default:
-        console.log('ERROR unlinkDest : Unknown event ' + data.event);
-        cb(new Error('ERROR unlinkDest : Unknown event ' + data.event));
+        console.log("ERROR unlinkDest : Unknown event " + data.event);
+        cb(new Error("ERROR unlinkDest : Unknown event " + data.event));
         return;
     }
     cb?.();

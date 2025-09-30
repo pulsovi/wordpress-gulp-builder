@@ -26,3 +26,5 @@ export function pluginCopyFiles () {
     error => { if (error) console.error(error); }
   );
 }
+pluginCopyFiles.displayName = "pluginCopyFiles";
+

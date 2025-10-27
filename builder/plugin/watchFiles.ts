@@ -12,6 +12,7 @@ import { log, logMove } from '../util/log.js';
 
 import { pluginsIgnoreFilter } from './ignoreFilter.js';
 import { pluginsSendFileToServer } from './sendFileToServer.js';
+import { fs } from "../util/fs.js";
 
 /**
  * Gulp task: watch files for keeping synchronization
@@ -53,15 +54,21 @@ function watchServerFiles () {
     },
   });
 
-  chokidar.watch('.', {
-    cwd: 'src/plugins/',
-    depth: 0,
-    ignoreInitial: false,
-    ignorePermissionErrors: true,
-  })
-    .on('addDir', dirname => { if (dirname) watcher.add(compiledFilesOf(dirname)); })
-    .on('unlinkDir', dirname => { if (dirname) watcher.unwatch(compiledFilesOf(dirname)); })
-  ;
+  chokidar
+    .watch(".", {
+      cwd: "src/plugins/",
+      depth: 0,
+      ignoreInitial: false,
+      ignorePermissionErrors: true,
+    })
+    .on("addDir", async (dirname) => {
+      const files = await compiledFilesOf(dirname);
+      if (files) watcher.add(files);
+    })
+    .on("unlinkDir", async (dirname) => {
+      const files = await compiledFilesOf(dirname);
+      if (files) watcher.unwatch(files);
+    });
 
   return pipeline(
     FSWatcherToStream(watcher, {base: `${getConfig().server.root}/wp-content/`}),
@@ -70,9 +77,13 @@ function watchServerFiles () {
     error => { if (error) console.error(error); }
   );
 
-  function compiledFilesOf (pluginDirName: string): string {
+  async function compiledFilesOf(
+    pluginDirName: string
+  ): Promise<string | null> {
     const pluginName = npath.basename(pluginDirName);
     const files = `${pluginName}/languages`;
+    const stat = await fs.stat(files).catch((err) => ({ error: err }));
+    if ("error" in stat) return null;
     return files;
   }
 }

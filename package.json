@@ -42,5 +42,8 @@
   "author": "David GABISON <david.gabison@outlook.com>",
   "license": "GPL-3.0-or-later",
   "packageManager": "yarn@4.6.0",
-  "type": "module"
+  "type": "module",
+  "peerDependencies": {
+    "esbuild": "*"
+  }
 }

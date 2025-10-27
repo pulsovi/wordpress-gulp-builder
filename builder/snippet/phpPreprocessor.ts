@@ -9,113 +9,205 @@ import ts from 'typescript';
 import Vinyl from 'vinyl';
 
 import { fs } from '../util/fs.js';
+  import { loadModule } from "../util/loadModule.js";
 
-type CommandMatch = RegExpMatchArray & { groups: { command: string; arguments: string; }};
-export type Context = Record<string, unknown> & {
+  type CommandMatch = RegExpMatchArray & {
+    groups: { command: string; arguments: string };
+  };
+  export type Context = Record<string, unknown> & {
+    /**
+     * If true, enable watching on file dependencies
+     * @default false
+     */
+    follow?: boolean;
+  };
+  const commands: Record<
+    string,
+    (match: CommandMatch, data: Vinyl, context: Context) => Promise<string>
+  > = {};
+  const commandRE = [
+    /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
+    /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
+    /('|")<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>\1/u,
+    /^# ?(?<command>[a-z_]*)(?: (?<arguments>.*))?$/mu,
+
+    /* ↓ this line MUST be the last item of the array ↓ */
+    /<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>/u,
+  ];
+
+  /** return match of `content` against preprocess regexps */
+  function getMatch(content: string): CommandMatch | null {
+    for (const regexp of commandRE) {
+      const match = content.match(regexp);
+      if (match) return match as CommandMatch;
+    }
+    return null;
+  }
+
   /**
-   * If true, enable watching on file dependencies
-   * @default false
+   * Return a stream which consumes snippet PHP files and preprocess
+   * all the `/*<<<command ...>>>*​/` strings
+   *
+   * @param context A context options for the preprocessor.
+   * @param {boolean} context.follow If true, enable watching on file dependencies
    */
-  follow?: boolean;
-};
-const commands: Record<string, ((match: CommandMatch, data: Vinyl, context: Context) => Promise<string>)> = {};
-const commandRE = [
-  /\/\*<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>\*\//u,
-  /<!--<<<(?<command>[a-z_]*)(?: (?<arguments>[^>]*))?>>>-->/u,
-  /('|")<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>\1/u,
-  /^# ?(?<command>[a-z_]*)(?: (?<arguments>.*))?$/mu,
-
-  /* ↓ this line MUST be the last item of the array ↓ */
-  /<<<(?<command>[a-z_]*) (?<arguments>[^>]*)>>>/u,
-]
-
-/** return match of `content` against preprocess regexps */
-function getMatch (content: string): CommandMatch | null {
-  for (const regexp of commandRE) {
-    const match = content.match(regexp);
-    if (match) return match as CommandMatch;
+  export function snippetPhpPreprocessor(context: Context = {}) {
+    return new Stream.Transform({
+      objectMode: true,
+      async transform(data: Vinyl, _encoding, cb) {
+        try {
+          await _snippetPhpPreprocessor(data, { ...context });
+          cb(null, data);
+        } catch (error) {
+          console.info(
+            chalk.red("SNIPPET PHP PREPROCESSOR ERROR"),
+            "when process",
+            chalk.blue(data.path),
+            "\n",
+            error.message
+          );
+          cb(error);
+        }
+      },
+    });
   }
-  return null;
-}
+  snippetPhpPreprocessor.func = _snippetPhpPreprocessor;
 
-/**
- * Return a stream which consumes snippet PHP files and preprocess
- * all the `/*<<<command ...>>>*​/` strings
- *
- * @param context A context options for the preprocessor.
- * @param {boolean} context.follow If true, enable watching on file dependencies
- */
-export function snippetPhpPreprocessor (context: Context = {}) {
-  return new Stream.Transform({
-    objectMode: true,
-    async transform (data: Vinyl, _encoding, cb) {
-      try {
-        await _snippetPhpPreprocessor(data, { ...context })
-        cb(null, data);
-      } catch (error) {
-        console.info(chalk.red('SNIPPET PHP PREPROCESSOR ERROR'), 'when process', chalk.blue(data.path), '\n', error.message);
-        cb(error);
+  async function _snippetPhpPreprocessor(
+    data: Vinyl,
+    context: Context
+  ): Promise<void> {
+    let content = data.contents!.toString();
+    let match = getMatch(content);
+
+    while (match) {
+      const { command } = match.groups!;
+
+      let replacement = "";
+      if (command in commands) {
+        replacement = await commands[command](match, data, context);
+      } else {
+        error(
+          chalk.red(
+            `snippetPhpPreprocessor Error : Unknown preprocessor command ${command}.\nAvailable commands are : ${Object.keys(
+              commands
+            ).join(", ")}`
+          )
+        );
       }
-    },
-  });
-}
-snippetPhpPreprocessor.func = _snippetPhpPreprocessor;
 
-async function _snippetPhpPreprocessor (data: Vinyl, context: Context): Promise<void> {
-  let content = data.contents!.toString();
-  let match = getMatch(content);
+      while (content.includes(match[0])) {
+        // cannot use content.replace() because replacement can content `$` which
+        // will be interpreted as a RegEx match index
+        const start = content.indexOf(match[0]);
+        const end = start + match[0].length;
+        content = content.slice(0, start) + replacement + content.slice(end);
+      }
 
-  while (match) {
-    const { command } = match.groups!;
-
-    let replacement = '';
-    if (command in commands) {
-      replacement = await commands[command](match, data, context);
-    } else {
-      error(chalk.red(`snippetPhpPreprocessor Error : Unknown preprocessor command ${command}.\nAvailable commands are : ${Object.keys(commands).join(', ')}`));
+      match = getMatch(content);
     }
 
-    while (content.includes(match[0])) {
-      // cannot use content.replace() because replacement can content `$` which
-      // will be interpreted as a RegEx match index
-      const start = content.indexOf(match[0]);
-      const end = start + match[0].length;
-      content = content.slice(0, start) + replacement + content.slice(end);
-    }
-
-    match = getMatch(content);
+    data.contents = Buffer.from(content);
   }
 
-  data.contents = Buffer.from(content);
-}
+  commands.include_raw = async function includeRaw(
+    match,
+    data,
+    context
+  ): Promise<string> {
+    const target = path.resolve(
+      path.dirname(data.path),
+      match.groups.arguments
+    );
+    const content = await fs.readFile(target, "utf8");
+    if (context.follow) setDependency(data.path, target, data.base);
+    return content;
+  };
 
-commands.include_raw = async function includeRaw (match, data, context): Promise<string> {
-  const target = path.resolve(path.dirname(data.path), match.groups.arguments);
-  const content = await fs.readFile(target, 'utf8');
-  if (context.follow) setDependency(data.path, target, data.base);
-  return content;
-};
+  commands.include_typescript = async function includeTypescript(
+    match,
+    data,
+    context
+  ): Promise<string> {
+    const target = path.resolve(
+      path.dirname(data.path),
+      match.groups.arguments
+    );
 
-commands.include_typescript = async function includeTypescript (match, data, context): Promise<string> {
-    const target = path.resolve(path.dirname(data.path), match.groups.arguments);
-
-    if (!await fs.exists(target)) {
-        const [fullCommand] = match;
-        error(chalk.red(`phpPreprocessor.includeTypescript Error : "${fullCommand}" source file not found.`));
-        return fullCommand;
+    if (!(await fs.exists(target))) {
+      const [fullCommand] = match;
+      error(
+        chalk.red(
+          `phpPreprocessor.includeTypescript Error : "${fullCommand}" source file not found.`
+        )
+      );
+      return fullCommand;
     }
 
-    const tsContent = await fs.readFile(target, 'utf8');
-    const jsContent = ts.transpileModule(tsContent, { compilerOptions: {
-        target: ts.ScriptTarget.ES2020,
-        module: ts.ModuleKind.CommonJS,
-    }});
+    /**
+     * Try to bundle the file using esbuild.
+     * @unreleased
+     */
+    const esbuildLoading = await loadModule("esbuild");
+    if ("module" in esbuildLoading) {
+      const esbuild = esbuildLoading.module;
 
-    if (context.follow)
-        setDependency(data.path, target, data.base);
+      /**
+       * Result of esbuild build in memory
+       */
+      const result = await esbuild.build({
+        entryPoints: [target],
+        bundle: true,
+        write: false,
+        metafile: Boolean(context.follow),
+        format: "iife",
+        platform: "browser",
+        target: ["es2020"],
+        loader: { ".ts": "ts" },
+        absWorkingDir: path.dirname(target),
+      });
 
-    return jsContent.outputText;
-};
+      if (context.follow && result.metafile) {
+        /**
+         * Dependencies detected by esbuild
+         */
+        const inputs = Object.keys(result.metafile.inputs);
+        for (const dep of inputs)
+          setDependency(
+            data.path,
+            path.resolve(path.dirname(target), dep),
+            data.base
+          );
+      }
+
+      /**
+       * Bundled JS code, without external require/imports
+       */
+      const bundled = result.outputFiles[0]?.text ?? "";
+      return bundled;
+    } else {
+      // Fallback: esbuild not found, using ts.transpileModule
+      info(
+        chalk.red(
+          "phpPreprocessor.includeTypescript Error : esbuild not found (Falling back to ts.transpileModule).\n" +
+            '\tSuggested fix: install esbuild using "npm install -D esbuild".'
+        ),
+        { target }
+      );
+      // info(esbuildLoading.errors);
+      const tsContent = await fs.readFile(target, "utf8");
+      const jsContent = ts.transpileModule(tsContent, {
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2020,
+          module: ts.ModuleKind.CommonJS,
+        },
+      });
+
+      if (context.follow) setDependency(data.path, target, data.base);
+
+      return jsContent.outputText;
+    }
+  };
 
 commands.php_string = async function phpString (match, data, context): Promise<string> {
   try {

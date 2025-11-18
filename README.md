@@ -129,7 +129,7 @@ Available commands are
 |-------|----|-----------|
 |`include_raw`|**`filename`** string|Include the raw content of the filename.|
 |`php_string`|**`filename`** string|Include the content of the file as a single-quote PHP string, escaping the specials chars.|
-|`include_once`|**`filename`** string|Include php file content if it's not already included|
+|`include_once`|**`filename`** string|Include php file content if it's not already included. The `<?php` and `?>` tags are removed from the included file.|
 
 ## Contribution
 

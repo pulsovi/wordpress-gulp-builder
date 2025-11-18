@@ -222,6 +222,10 @@ commands.php_string = async function phpString (match, data, context): Promise<s
   }
 };
 
+/**
+ * Include a PHP file only once.
+ * The `<?php` and `?>` tags are removed from the included file.
+ */
 commands.include_once = async function includeOnce (match, data, context): Promise<string> {
   const target = path.resolve(path.dirname(data.path), match.groups.arguments);
   const included = context.includeOnce = context.includeOnce as string[] ?? [];
@@ -237,9 +241,12 @@ commands.include_once = async function includeOnce (match, data, context): Promi
     // console.log({match: match.groups, file: data.path, context, target});
     return '';
   }
+  let content = await fs.readFile(target, "utf8");
+  if (content.startsWith("<?php")) content = content.slice("<?php".length);
+  if (content.endsWith("?>")) content = content.slice(0, -"?>".length);
   const includeFile = new Vinyl({
     cwd: data.cwd,
-    contents: (await fs.readFile(target)).slice('<?php'.length),
+    contents: Buffer.from(content),
     stat,
     base: data.base,
     path: target,

@@ -7,39 +7,44 @@ import Snippet from "../snippet/Snippet.js";
 import Plugin from "../plugin/Plugin.js";
 import { walk } from "../util/walk.js";
 import { pluginIgnoreFilter } from "../plugin/ignoreFilter.js";
-import { log } from "../util/log.js";
+import { info, log } from '../util/log.js';
 
 const { dest, src } = gulp;
 
-export async function sinceUnreleased (cb) {
+export async function sinceUnreleased(cb) {
   const plugins = await pluginListAll();
   const snippets = await snippetListAll();
-  const items = getItems({plugins, snippets});
-  await Promise.all(items.map(async item => {
-    const version = await item.getVersion();
-    const directory = item.getDir();
-    const stream = walk(directory, {
-      base: 'src/plugins',
-      ignored: pluginIgnoreFilter(item.name),
+  const items = getItems({ plugins, snippets });
+  await Promise.all(
+    items.map(async (item) => {
+      const version = await item.getVersion();
+      const directory = item.getDir();
+      const base = item instanceof Plugin ? 'src/plugins' : 'src/snippets';
+      const args = item instanceof Plugin ? { base, ignored: pluginIgnoreFilter(item.name) } : { base };
+      info(`Processing ${item.name}`);
+      const stream = walk(directory, args).pipe(log()).pipe(mapSinceUnreleased(version)).pipe(dest(base));
+      await new Promise((rs, rj) => {
+        stream.on('end', rs);
+        stream.on('error', rj);
+      });
     })
-    .pipe(log())
-    .pipe(mapSinceUnreleased(version))
-    .pipe(dest('src/plugins'));
-    await new Promise((rs, rj) => {
-      stream.on('end', rs);
-      stream.on('error', rj);
-    });
-  })).catch(error => cb(error));
+  ).catch((error) => cb(error));
   cb();
 }
 
-function getItems ({plugins, snippets}: { plugins: Plugin[], snippets: Snippet[] }): (Plugin|Snippet)[] {
-  const pluginName = process.argv.find(arg => arg.startsWith('--plugin'))?.split('=').pop();
-  const plugin = plugins.find(item => item.name === pluginName)
+function getItems({ plugins, snippets }: { plugins: Plugin[]; snippets: Snippet[] }): (Plugin | Snippet)[] {
+  const pluginName = process.argv
+    .find((arg) => arg.startsWith('--plugin'))
+    ?.split('=')
+    ?.pop();
+  const plugin = plugins.find((item) => item.name === pluginName);
   if (plugin) return [plugin];
 
-  const snippetName = process.argv.find(arg => arg.startsWith('--snippet'))?.split('=').pop();
-  const snippet = snippets.find(item => item.name === snippetName)
+  const snippetName = process.argv
+    .find((arg) => arg.startsWith('--snippet'))
+    ?.split('=')
+    ?.pop();
+  const snippet = snippets.find((item) => item.name === snippetName);
   if (snippet) return [snippet];
 
   return [...plugins, ...snippets];

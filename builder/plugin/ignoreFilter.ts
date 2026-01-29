@@ -24,6 +24,11 @@ export function pluginsIgnoreFilter (options: PluginsIgnoreFilterOptions = {}) {
   }
 }
 
+/**
+ * Ignore filter for a plugin
+ * @param pluginName - The name of the plugin
+ * @returns A function that returns true if the file should be ignored, false otherwise
+ */
 export function pluginIgnoreFilter (pluginName: string) {
   const dependencies = getDeps(pluginName);
 
@@ -38,7 +43,10 @@ export function pluginIgnoreFilter (pluginName: string) {
 
     // process vendor folder
     if (path.startsWith('vendor/')) {
-      // all dependencies are dev deps
+      // unable to get dependencies : keep all files
+      if (!dependencies) return false;
+
+      // all dependencies are dev deps : ignore all files
       if (!dependencies.length) return true;
 
       path = path.replace(/^vendor\//u, '');
@@ -53,12 +61,12 @@ export function pluginIgnoreFilter (pluginName: string) {
   };
 }
 
-function getDeps (pluginName: string): string[] {
+function getDeps(pluginName: string): string[] | null {
   const composerFile = npath.resolve('src/plugins', pluginName, 'composer.lock');
   try {
     const json = fs.readJsonSync(composerFile);
     return json.packages.map((pkg: {name: string}) => pkg.name);
   } catch (_error) {
-    return [];
+    return null;
   }
 }

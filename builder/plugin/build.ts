@@ -52,7 +52,9 @@ export function pluginBuild() {
 /** Gulp task: build given plugin by name and version */
 async function pluginBuildTask(pluginName: string, version: string, cb: (error?: Error) => void) {
   const gitBranch = await gitGetBranch();
-  const zipFile = `${pluginName}/${gitBranch}/${pluginName}_${version}.zip`;
+  const zipFile = ['master', 'main'].includes(gitBranch) ?
+    `${pluginName}/${pluginName}_${version}.zip` :
+    `${pluginName}/${pluginName}_${version}_${gitBranch}.zip`;
   if (await fs.exists(npath.join('build/plugins', zipFile))) {
     const override = await confirm(chalk.redBright(`The version ${chalk.yellow(version)} of the plugin ${chalk.blue(pluginName)} already built. Override ?`));
     if (!override) {

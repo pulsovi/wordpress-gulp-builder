@@ -1,5 +1,5 @@
 import npath from 'node:path';
-import Stream from 'node:stream';
+import Stream, { PassThrough, Transform } from 'node:stream';
 
 import chalk from 'chalk';
 import gulp from 'gulp'; const { dest, series, src } = gulp;
@@ -49,6 +49,28 @@ export function pluginBuild() {
   });
 }
 
+/** Stream.Transform that postfixes the version in plugin PHP headers with ~gitBranch */
+function pluginPostfixVersion(version: string, gitBranch: string) {
+  if (['master', 'main'].includes(gitBranch)) return new PassThrough({ objectMode: true });
+  const versionEscaped = escapeRegExp(version);
+  const versionRE = new RegExp(`^( \\* Version:\\s*)${versionEscaped}(\\s*)$`, 'um');
+  const replacement = `$1${version}~${gitBranch}$2`;
+  return new Transform({
+    objectMode: true,
+    transform(data: Vinyl, _encoding, cb) {
+      if (data.extname === '.php') {
+        const content = data.contents!.toString('utf8');
+        if (versionRE.test(content)) {
+          const cloned = data.clone();
+          cloned.contents = Buffer.from(content.replace(versionRE, replacement), 'utf8');
+          return cb(null, cloned);
+        }
+      }
+      cb(null, data);
+    },
+  });
+}
+
 /** Gulp task: build given plugin by name and version */
 async function pluginBuildTask(pluginName: string, version: string, cb: (error?: Error) => void) {
   const gitBranch = await gitGetBranch();
@@ -69,6 +91,7 @@ async function pluginBuildTask(pluginName: string, version: string, cb: (error?:
       ignored: pluginIgnoreFilter(pluginName),
     }),
     pluginProcessDoc(),
+    pluginPostfixVersion(version, gitBranch),
     zip(zipFile),
     dest('build/plugins'),
     log(data => `${chalk.blue(pluginName)} v${chalk.yellow(version)} PLUGIN successfully built`),

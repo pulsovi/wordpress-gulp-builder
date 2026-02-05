@@ -74,11 +74,12 @@ function pluginPostfixVersion(version: string, gitBranch: string) {
 /** Gulp task: build given plugin by name and version */
 async function pluginBuildTask(pluginName: string, version: string, cb: (error?: Error) => void) {
   const gitBranch = await gitGetBranch();
-  const zipFile = ['master', 'main'].includes(gitBranch) ?
+  const isMaster = ['master', 'main'].includes(gitBranch);
+  const zipFile = isMaster ?
     `${pluginName}/${pluginName}_${version}.zip` :
     `${pluginName}/${pluginName}_${version}_${gitBranch}.zip`;
   if (await fs.exists(npath.join('build/plugins', zipFile))) {
-    const override = await confirm(chalk.redBright(`The version ${chalk.yellow(version)} of the plugin ${chalk.blue(pluginName)} already built. Override ?`));
+    const override = await confirm(chalk.redBright(`The version ${chalk.yellow(version)}${isMaster ? '' : `~${gitBranch}`} of the plugin ${chalk.blue(pluginName)} already built. Override ?`));
     if (!override) {
       info(chalk.redBright(`pluginBuildTask CANCELED for ${chalk.blue(pluginName)} v${chalk.yellow(version)}`));
       return cb();

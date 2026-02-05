@@ -38,7 +38,9 @@ function watcher () {
       watch('debug.log', { cwd, ignorePermissionErrors: true })
         .on('error', error => console.log('bindDebugLog.watcher.watch error:', error))
     ),
-    vinylFilter((data: Vinyl) => Boolean(data.stat!.size)),
+    vinylFilter((data: Vinyl) => {
+      return Boolean(data.stat?.size);
+    }),
     onChange(),
     dest('.'),
     error => { if (error) console.error(error); }
@@ -114,7 +116,8 @@ function cleaner () {
   })
     .on('error', error => console.log('bindDebugLog.cleaner watch error:', error))
     .on('change', async file => {
-      if (!(await fs.stat(`${cwd}/debug.log`)).size) return;
+      const stats = await fs.stat(`${cwd}/debug.log`).catch(() => null);
+      if (!stats || !stats.size) return;
       info(`change ${chalk.magenta(file)}, truncate debug.log`);
       await fs.truncate(`${cwd}/debug.log`);
     });
